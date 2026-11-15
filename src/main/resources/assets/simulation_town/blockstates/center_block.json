@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "simulation_town:block/center_block"
+    }
+  }
+}
