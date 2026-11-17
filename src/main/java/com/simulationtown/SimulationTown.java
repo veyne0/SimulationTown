@@ -1,6 +1,7 @@
 package com.simulationtown;
 
 import com.mojang.logging.LogUtils;
+import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -41,8 +42,6 @@ public class SimulationTown {
         block.BLOCK_ENTITY_TYPES.register(modEventBus);
         SimulationTown.ATTACHMENT_TYPES.register(modEventBus);
 
-
-        // 阶段 1 的注册写在这里（方块、物品、创造模式标签页……）
     }
     @SubscribeEvent
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
@@ -61,8 +60,15 @@ public class SimulationTown {
 
     public static final Supplier<AttachmentType<BlockPos>> TOWN_CENTER =
             ATTACHMENT_TYPES.register("town_center", () ->
-                    AttachmentType.builder(() -> BlockPos.ZERO) // 默认坐标0,0,0
+                    AttachmentType.builder(() -> (BlockPos)null) // 默认坐标0,0,0
                             .serialize(BlockPos.CODEC) // 用原版的序列化
+                            .copyOnDeath()
+                            .build());
+
+    public static final Supplier<AttachmentType<String>> TOWN_CENTER_NAME =
+            ATTACHMENT_TYPES.register("town_center_name", () ->
+                    AttachmentType.builder(() -> (String)null) // 默认坐标0,0,0
+                            .serialize(Codec.STRING) // 用原版的序列化
                             .copyOnDeath()
                             .build());
 }

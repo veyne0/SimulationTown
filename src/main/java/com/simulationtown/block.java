@@ -1,5 +1,7 @@
 package com.simulationtown;
 
+import com.simulationtown.towncenter.centerBlockEntity;
+import com.simulationtown.towncenter.centerblock;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.level.block.Block;
