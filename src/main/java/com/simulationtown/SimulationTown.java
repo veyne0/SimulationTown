@@ -9,12 +9,15 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import org.slf4j.Logger;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 import static com.simulationtown.block.BLOCK_ITEM;
@@ -40,18 +43,29 @@ public class SimulationTown {
         block.BLOCKS.register(modEventBus);
         block.ITEMS.register(modEventBus);
         block.BLOCK_ENTITY_TYPES.register(modEventBus);
+
         SimulationTown.ATTACHMENT_TYPES.register(modEventBus);
+
+        Path rootDir = FMLPaths.GAMEDIR.get().resolve("BUILDING_DIR_NAME");
+        String[] categories = {"residence", "agriculture", "industry", "special"};
+        for (String category : categories) {
+            Path categoryDir = rootDir.resolve(category);
+            if (!Files.exists(categoryDir)) {
+                try {
+                    Files.createDirectories(categoryDir);
+                    System.out.println("已创建分类文件夹: " + categoryDir.toString());
+                } catch (Exception e) {
+                    e.printStackTrace();}}}
 
     }
     @SubscribeEvent
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if(event.getTabKey()==CreativeModeTabs.BUILDING_BLOCKS){
             event.accept(block.BLOCK_ITEM.get());
-
+            event.accept(block.BUILD_BLOCK_ITEM.get());
         }
-
-
     }
+
     /*
     注册数据附件
     */
