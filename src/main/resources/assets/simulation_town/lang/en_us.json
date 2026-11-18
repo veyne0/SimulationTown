@@ -1,4 +1,5 @@
 {
   "itemGroup.simulation_town": "Simulation Town",
-  "block.simulation_town.center_block": "Town Center"
+  "block.simulation_town.center_block": "Town Center",
+  "block.simulation_town.build_block": "Building Block"
 }

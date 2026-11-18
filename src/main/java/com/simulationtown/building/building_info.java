@@ -1,4 +1,4 @@
-package com.simulationtown.building;
+/*package com.simulationtown.building;
 
 import net.neoforged.fml.loading.FMLPaths;
 
@@ -17,7 +17,7 @@ public class building_info {
     }
     public static List<building_info> scanAllBuildings() {
         List<building_info> buildingList = new ArrayList<>();
-        Path rootDir = FMLPaths.GAMEDIR.get().resolve("simulation_town_buildings");
+        Path rootDir = FMLPaths.GAMEDIR.get().resolve("simulation_town_buliding");
         String[] categories = {"residence", "agriculture", "industry", "special"};
 
         for (String category : categories) {
@@ -38,3 +38,4 @@ public class building_info {
         return buildingList;
     }
 }
+*/

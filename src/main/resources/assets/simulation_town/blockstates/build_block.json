@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "simulation_town:block/build_block"
+    }
+  }
+}

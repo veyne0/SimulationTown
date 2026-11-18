@@ -46,7 +46,7 @@ public class SimulationTown {
 
         SimulationTown.ATTACHMENT_TYPES.register(modEventBus);
 
-        Path rootDir = FMLPaths.GAMEDIR.get().resolve("BUILDING_DIR_NAME");
+        Path rootDir = FMLPaths.GAMEDIR.get().resolve("simulation_town_buliding");
         String[] categories = {"residence", "agriculture", "industry", "special"};
         for (String category : categories) {
             Path categoryDir = rootDir.resolve(category);

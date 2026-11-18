@@ -1,4 +1,5 @@
 {
   "itemGroup.simulation_town": "模拟小镇",
-  "block.simulation_town.center_block": "镇中心"
+  "block.simulation_town.center_block": "镇中心",
+  "block.simulation_town.build_block": "建筑方块"
 }
