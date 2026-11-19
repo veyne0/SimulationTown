@@ -33,6 +33,10 @@ neoForge {
     runs {
         client {
             client()
+            // 开发环境的 JVM 可能带 -Djava.awt.headless=true，会让「导入」的文件选择框
+            // 直接抛 HeadlessException 崩游戏。这里两条都写上，尽量压住它。
+            jvmArgument '-Djava.awt.headless=false'
+            systemProperty 'java.awt.headless', 'false'
         }
         server {
             server()
@@ -84,7 +88,7 @@ dependencies {
     // 它本身是一个独立的 NeoForge 模组（有自己的 @Mod 和 META-INF/neoforge.mods.toml），
     // 这里用 Jar-in-Jar 把它嵌进 SimulationTown 的 jar 里，发布时只需要发一个文件。
     // 注意：它依然是「另一个模组」，游戏模组列表里会单独出现一项，不去改它的源码。
-    def buildlibJar = file('libs/buildlib-0.1.1.jar')
+    def buildlibJar = file('libs/buildlib-0.1.4.jar')
     if (buildlibJar.exists()) {
         implementation files(buildlibJar)   // 编译期可见 + 开发运行时加载（runClient 用）
         jarJar files(buildlibJar)           // 发布时打进 jar 内部

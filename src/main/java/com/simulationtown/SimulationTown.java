@@ -38,6 +38,11 @@ public class SimulationTown {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SimulationTown(IEventBus modEventBus, ModContainer modContainer) {
+        // 开发环境（Gradle run）的 JVM 常常是 headless 的：AWT 认为这台机器没有显示器，
+        // JFileChooser.showOpenDialog() 会抛 HeadlessException 直接把游戏带崩。
+        // 这个属性必须在任何 AWT 类被加载之前设置，所以放在构造器最前面。
+        System.setProperty("java.awt.headless", "false");
+
         LOGGER.info("[Simulation Town] done loading");
         modEventBus.addListener(this::addCreative);
         block.BLOCKS.register(modEventBus);
@@ -47,7 +52,7 @@ public class SimulationTown {
         SimulationTown.ATTACHMENT_TYPES.register(modEventBus);
 
         Path rootDir = FMLPaths.GAMEDIR.get().resolve("simulation_town_buliding");
-        String[] categories = {"residence", "agriculture", "industry", "special"};
+        String[] categories = {"residence", "agriculture", "industry", "special", "_incoming"};
         for (String category : categories) {
             Path categoryDir = rootDir.resolve(category);
             if (!Files.exists(categoryDir)) {
@@ -57,12 +62,18 @@ public class SimulationTown {
                 } catch (Exception e) {
                     e.printStackTrace();}}}
 
+        LOGGER.info("[Simulation Town] AWT headless = {}", java.awt.GraphicsEnvironment.isHeadless());
     }
     @SubscribeEvent
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if(event.getTabKey()==CreativeModeTabs.BUILDING_BLOCKS){
             event.accept(block.BLOCK_ITEM.get());
             event.accept(block.BUILD_BLOCK_ITEM.get());
+            event.accept(block.RESIDENCE_BLOCK_ITEM.get());
+            event.accept(block.SPECIAL_BLOCK_ITEM.get());
+            event.accept(block.AGRICULTURE_BLOCK_ITEM.get());
+            event.accept(block.INDUSTRY_BLOCK_ITEM.get());
+
         }
     }
 

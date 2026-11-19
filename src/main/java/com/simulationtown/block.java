@@ -1,10 +1,14 @@
 package com.simulationtown;
 
+import com.simulationtown.Agriculture.agriculture_block;
 import com.simulationtown.Agriculture.agriculture_block_entity;
 import com.simulationtown.building.build_block;
 import com.simulationtown.building.build_block_entity;
+import com.simulationtown.industry.industry_block;
 import com.simulationtown.industry.industry_block_entity;
+import com.simulationtown.residence.residence_block;
 import com.simulationtown.residence.residence_block_entity;
+import com.simulationtown.special.special_block;
 import com.simulationtown.special.special_block_entity;
 import com.simulationtown.towncenter.centerBlockEntity;
 import com.simulationtown.towncenter.centerblock;
@@ -53,7 +57,7 @@ public class block {
 
 /*注册住宅方块*/
     public static final DeferredBlock<Block> RESIDENCE_BLOCK =
-            BLOCKS.registerBlock("build_block", build_block::new,BlockBehaviour.Properties.of().strength(-1.0f,3600.0f));
+            BLOCKS.registerBlock("residence_block", residence_block::new,BlockBehaviour.Properties.of().strength(-1.0f,3600.0f));
     public static final DeferredItem<BlockItem> RESIDENCE_BLOCK_ITEM =
             ITEMS.registerSimpleBlockItem(RESIDENCE_BLOCK);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<residence_block_entity>> RBE =
@@ -65,7 +69,7 @@ public class block {
 
     /*注册工业方块*/
     public static final DeferredBlock<Block> INDUSTRY_BLOCK =
-            BLOCKS.registerBlock("build_block", build_block::new,BlockBehaviour.Properties.of().strength(-1.0f,3600.0f));
+            BLOCKS.registerBlock("industry_block", industry_block::new,BlockBehaviour.Properties.of().strength(-1.0f,3600.0f));
     public static final DeferredItem<BlockItem> INDUSTRY_BLOCK_ITEM =
             ITEMS.registerSimpleBlockItem(INDUSTRY_BLOCK);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<industry_block_entity>> IBE =
@@ -77,7 +81,7 @@ public class block {
 
     /*注册特殊方块*/
     public static final DeferredBlock<Block> SPECIAL_BLOCK =
-            BLOCKS.registerBlock("build_block", build_block::new,BlockBehaviour.Properties.of().strength(-1.0f,3600.0f));
+            BLOCKS.registerBlock("special_block", special_block::new,BlockBehaviour.Properties.of().strength(-1.0f,3600.0f));
     public static final DeferredItem<BlockItem> SPECIAL_BLOCK_ITEM =
             ITEMS.registerSimpleBlockItem(SPECIAL_BLOCK);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<special_block_entity>> SBE =
@@ -90,7 +94,7 @@ public class block {
 
     /*注册农业方块*/
     public static final DeferredBlock<Block> AGRICULTURE_BLOCK =
-            BLOCKS.registerBlock("build_block", build_block::new,BlockBehaviour.Properties.of().strength(-1.0f,3600.0f));
+            BLOCKS.registerBlock("agriculture_block", agriculture_block::new,BlockBehaviour.Properties.of().strength(-1.0f,3600.0f));
     public static final DeferredItem<BlockItem> AGRICULTURE_BLOCK_ITEM =
             ITEMS.registerSimpleBlockItem(AGRICULTURE_BLOCK);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<agriculture_block_entity>> ABE =

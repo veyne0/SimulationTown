@@ -1,5 +1,9 @@
 {
   "itemGroup.simulation_town": "模拟小镇",
   "block.simulation_town.center_block": "镇中心",
-  "block.simulation_town.build_block": "建筑方块"
+  "block.simulation_town.build_block": "建筑方块",
+  "block.simulation_town.residence_block": "住宅方块",
+  "block.simulation_town.industry_block": "工业方块",
+  "block.simulation_town.special_block": "特殊方块",
+  "block.simulation_town.agriculture_block": "农业方块"
 }

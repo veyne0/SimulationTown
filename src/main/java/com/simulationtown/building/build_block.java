@@ -30,6 +30,7 @@ import net.neoforged.neoforge.common.property.Properties;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class build_block extends Block implements BlockUIMenuType.BlockUI {
     public build_block(Properties properties){
@@ -40,9 +41,17 @@ public class build_block extends Block implements BlockUIMenuType.BlockUI {
     private static final String[] CATEGORIES = {"residence", "agriculture", "industry", "special"};
     private static final String[] CATEGORY_NAMES = {"住宅", "农业", "工业", "特殊"};
 
+    // 每个分类对应的「管理方块」：buildlib 用它校验这个 nbt 里到底有没有该类建筑的管理方块。
+    // 没有 → 客户端不开预览，服务端在点「建造」时也会拒绝。
+    private static final Map<String, String> MANAGER_BLOCK = Map.of(
+            "residence", "simulation_town:residence_block",
+            "agriculture", "simulation_town:agriculture_block",
+            "industry", "simulation_town:industry_block",
+            "special", "simulation_town:special_block");
+
     // 建筑 nbt 的根目录（游戏目录下）。
     // buildlib 自带的默认根目录是 "simulation_town_buliding"（少一个 i），我们用自己这个名字，所以每次显式传进去。
-    private static final String ROOT_DIR = "BUILDING_DIR_NAME";
+    private static final String ROOT_DIR = "simulation_town_buliding";
 
     // 固定行数：控件树两端必须一样，所以行是写死的，只是每行显示的文字会变
     private static final int ROWS = 10;
@@ -50,6 +59,11 @@ public class build_block extends Block implements BlockUIMenuType.BlockUI {
     // 列表缓存。绑定的 supplier 每个 tick 都会被问一次，不能每次都去 Files.walk 读盘
     private static List<BuildingInfo> cache = List.of();
     private static long cacheAt = 0L;
+
+    /** 让下一次扫描重新读盘（导入完成后调用） */
+    public static void refresh() {
+        cacheAt = 0L;
+    }
 
     private static List<BuildingInfo> cachedScan() {
         long now = System.currentTimeMillis();
@@ -119,6 +133,14 @@ public class build_block extends Block implements BlockUIMenuType.BlockUI {
         btnRefresh.setOnServerClick(e -> cacheAt = 0L); // 让下一次扫描重新读盘
         sidebar.addChild(btnRefresh);
 
+        // 导入：选一个 .nbt 文件，判断分类后复制进游戏目录的分类文件夹。
+        // 用 setOnClick（客户端）而不是 setOnServerClick —— Swing 文件选择框只在客户端有。
+        Button btnImport = new Button();
+        btnImport.setText("导入");
+        btnImport.layout(l -> l.widthPercent(100).height(20));
+        btnImport.setOnClick(e -> new build_import().daoru());
+        sidebar.addChild(btnImport);
+
         // ---------- 右：当前分类下的 nbt 列表（点文字进预览）----------
         UIElement content = new UIElement();
         content.layout(l -> l.flexDirection(FlexDirection.COLUMN).flexGrow(1).heightPercent(100).gapAll(2));
@@ -159,9 +181,13 @@ public class build_block extends Block implements BlockUIMenuType.BlockUI {
                 String n = rowLabel.getText().getString();
                 String cat = catLabel.getText().getString();
                 if (n.isEmpty() || cat.isEmpty()) return;
+                String required = MANAGER_BLOCK.get(cat);
+                if (required == null) return;
                 Path path = BuildingScanner.resolveNbtPath(ROOT_DIR, new BuildingInfo(cat, n));
                 if (path == null) return;
-                BuildLibApi.openPreview(path.toString());
+                // 第 2 参数 "分类/文件名"：建造完成事件里原样传回，用来写回方块实体
+                // 第 3 参数：管理方块，nbt 里没有它 → 客户端不开预览，服务端也拒绝建造
+                BuildLibApi.openPreview(path.toString(), cat + "/" + n, required);
             });
 
             content.addChild(row);

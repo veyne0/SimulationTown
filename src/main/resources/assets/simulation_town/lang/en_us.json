@@ -1,5 +1,9 @@
 {
   "itemGroup.simulation_town": "Simulation Town",
   "block.simulation_town.center_block": "Town Center",
-  "block.simulation_town.build_block": "Building Block"
+  "block.simulation_town.build_block": "Building Block",
+  "block.simulation_town.residence_block": "Residence Block",
+  "block.simulation_town.industry_block": "Industry Block",
+  "block.simulation_town.special_block": "Special Block",
+  "block.simulation_town.agriculture_block": "Agriculture Block"
 }
