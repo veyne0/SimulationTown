@@ -84,7 +84,7 @@ dependencies {
     // 它本身是一个独立的 NeoForge 模组（有自己的 @Mod 和 META-INF/neoforge.mods.toml），
     // 这里用 Jar-in-Jar 把它嵌进 SimulationTown 的 jar 里，发布时只需要发一个文件。
     // 注意：它依然是「另一个模组」，游戏模组列表里会单独出现一项，不去改它的源码。
-    def buildlibJar = file('libs/buildlib-0.1.0.jar')
+    def buildlibJar = file('libs/buildlib-0.1.1.jar')
     if (buildlibJar.exists()) {
         implementation files(buildlibJar)   // 编译期可见 + 开发运行时加载（runClient 用）
         jarJar files(buildlibJar)           // 发布时打进 jar 内部

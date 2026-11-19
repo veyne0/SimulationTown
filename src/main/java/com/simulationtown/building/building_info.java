@@ -15,6 +15,8 @@ public class building_info {
         this.category = category;
         this.file_name = file_name;
     }
+#该方法已经放入了buildlib模组里
+
     public static List<building_info> scanAllBuildings() {
         List<building_info> buildingList = new ArrayList<>();
         Path rootDir = FMLPaths.GAMEDIR.get().resolve("simulation_town_buliding");
