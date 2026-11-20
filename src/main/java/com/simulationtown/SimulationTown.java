@@ -3,6 +3,8 @@ package com.simulationtown;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
@@ -97,12 +99,25 @@ public class SimulationTown {
                             .copyOnDeath()
                             .build());
 
-    /*这个是玩家自己本身的经济*/
+    /*这个是玩家自己本身的经济,以后可能会改为double*/
     public static final Supplier<AttachmentType<Integer>> PLAYER_JINGJI =
             ATTACHMENT_TYPES.register("player_jingji", () ->
                     AttachmentType.builder(() -> 0)
                             .serialize(Codec.INT) // 用原版的序列化
+                            .sync(ByteBufCodecs.INT)
                             .copyOnDeath()
                             .build());
+
+
+    /*这个是小镇的GDP*/
+    public static final Supplier<AttachmentType<Double>> TOWN_GDP =
+            ATTACHMENT_TYPES.register("TOWN_GDP", () ->
+                    AttachmentType.builder(() -> 0.0)
+                            .serialize(Codec.DOUBLE) // 用原版的序列化
+                            .sync(ByteBufCodecs.DOUBLE)
+                            .copyOnDeath()
+                            .build());
+
+
 
 }

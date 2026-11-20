@@ -12,8 +12,8 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 public class residence_block_entity extends BlockEntity implements BuildingData {
     public String r_building_id = "";
     int[] r_building_box ;
-    int r_GDP;
-    int r_block_count;
+    public int r_GDP;
+    public int r_block_count;
 
     /** 雇佣的 NPC 名字 */
     public String employ_npc = "";

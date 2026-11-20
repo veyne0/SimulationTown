@@ -12,8 +12,8 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 public class agriculture_block_entity extends BlockEntity implements BuildingData {
     public String a_building_id = "";
     int[] a_building_box ;
-    int a_GDP;
-    int a_block_count;
+    public int a_GDP;
+    public int a_block_count;
 
     /*雇佣的 NPC的名字 */
     public String employ_npc = "";

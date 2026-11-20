@@ -18,15 +18,15 @@ import static com.simulationtown.towncenter.consume.hasItem;
 import static com.simulationtown.towncenter.consume.xiaohao;
 
 public class centerBlockEntity extends BlockEntity {
-    int init_resident = 2;
-    int max_resident=100;
-    int now_max_resident;
-    int now_resident;
+    public int init_resident = 2;
+    public int max_resident=100;
+    public int now_max_resident;
+    public int now_resident;
     private UUID player_UUID;
-    int level=1;
-    int max_level=5;
+    public int level=1;
+    public int max_level=5;
     BlockPos pos ;
-    String town_name;
+    public String town_name;
 
    public centerBlockEntity(BlockPos pos , BlockState state){
        super(block.CBE.get(),pos ,state);
@@ -142,5 +142,6 @@ public class centerBlockEntity extends BlockEntity {
        this.now_resident=nr;
        this.setChanged();
     }
+
 
 }

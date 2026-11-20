@@ -2,7 +2,7 @@ package com.simulationtown.industry;
 
 import com.lowdragmc.lowdraglib2.gui.factory.BlockUIMenuType;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.simulationtown.building.building_ui;
+import com.simulationtown.GUI.industry_block_GUI;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -37,6 +37,6 @@ public class industry_block extends Block implements BlockUIMenuType.BlockUI, En
 
     @Override
     public ModularUI createUI(BlockUIMenuType.BlockUIHolder holder) {
-        return building_ui.create(holder, "工业");
+        return industry_block_GUI.create(holder);
     }
 }

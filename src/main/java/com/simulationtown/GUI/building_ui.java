@@ -1,6 +1,5 @@
-package com.simulationtown.building;
+package com.simulationtown.GUI;
 
-import com.buildlib.api.BuildLibApi;
 import com.lowdragmc.lowdraglib2.gui.factory.BlockUIMenuType;
 import com.lowdragmc.lowdraglib2.gui.sync.bindings.impl.DataBindingBuilder;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
@@ -14,6 +13,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import com.buildlib.api.BuildLibApi;
+import com.simulationtown.building.BuildingData;
 
 /** 建筑本体的界面。四个分类共用这一份，只有标题不一样。 */
 public final class building_ui {
