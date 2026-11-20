@@ -92,8 +92,17 @@ public class SimulationTown {
 
     public static final Supplier<AttachmentType<String>> TOWN_CENTER_NAME =
             ATTACHMENT_TYPES.register("town_center_name", () ->
-                    AttachmentType.builder(() -> (String)null) // 默认坐标0,0,0
+                    AttachmentType.builder(() -> (String)null)
                             .serialize(Codec.STRING) // 用原版的序列化
                             .copyOnDeath()
                             .build());
+
+    /*这个是玩家自己本身的经济*/
+    public static final Supplier<AttachmentType<Integer>> PLAYER_JINGJI =
+            ATTACHMENT_TYPES.register("player_jingji", () ->
+                    AttachmentType.builder(() -> 0)
+                            .serialize(Codec.INT) // 用原版的序列化
+                            .copyOnDeath()
+                            .build());
+
 }

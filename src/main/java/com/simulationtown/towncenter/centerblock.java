@@ -11,11 +11,13 @@ import com.lowdragmc.lowdraglib2.gui.sync.bindings.impl.DataBindingBuilder;
 import com.lowdragmc.lowdraglib2.gui.sync.bindings.impl.SimpleBinding;
 import com.lowdragmc.lowdraglib2.gui.ui.style.StylesheetManager;
 import com.simulationtown.SimulationTown;
-import com.simulationtown.towncenter.centerBlockEntity;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -31,35 +33,39 @@ public class centerblock extends Block implements BlockUIMenuType.BlockUI, Entit
 
         super(properties);
     }
+
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new centerBlockEntity(pos, state);
     }
+
     @Override
-    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit){
-        if (level.getBlockEntity(pos) instanceof centerBlockEntity be){
-            if(be.getUUID() == null){
+    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (level.getBlockEntity(pos) instanceof centerBlockEntity be) {
+            if (be.getUUID() == null) {
                 be.bangding(player);
 
             }
-            if (be.get_pos()==null){
+            if (be.get_pos() == null) {
                 BlockPos TownPos = player.getData(SimulationTown.TOWN_CENTER);
                 player.setData(SimulationTown.TOWN_CENTER, new BlockPos(pos));
                 be.zuobiao();
             }
 
             if (!level.isClientSide) {
-                if (be.getUUID().equals(player.getUUID())&& pos.equals(player.getData(SimulationTown.TOWN_CENTER))){
+                if (be.getUUID().equals(player.getUUID()) && pos.equals(player.getData(SimulationTown.TOWN_CENTER))) {
                     BlockUIMenuType.openUI((ServerPlayer) player, pos);
-                }else{
+                } else {
                     player.displayClientMessage(Component.literal("你已经有小镇了"), true);
 
                 }
 
             }
+
         }
         return InteractionResult.SUCCESS;
     }
+
     @Override
     public ModularUI createUI(BlockUIMenuType.BlockUIHolder holder) {
         // 从方块位置取回中心方块实体（服务端、客户端各有一份）
@@ -68,6 +74,10 @@ public class centerblock extends Block implements BlockUIMenuType.BlockUI, Entit
 
         // 输入框里最新的文字。服务端这一份由 stringC2S 持续写入，点"确定"时读它
         final String[] typedName = {""};
+
+        // 当前显示的是哪一页：0 概览 / 1 居民 / 2 建筑 / 3 升级
+        // 只在服务端改，文字由 S2C 绑定推给客户端
+        final int[] page = {0};
 
         // ---- 标题：没名字显示"建立小镇"，有名字显示镇名 ----
         Label title = new Label();
@@ -145,19 +155,48 @@ public class centerblock extends Block implements BlockUIMenuType.BlockUI, Entit
         if (center != null) {
             // 服务端读 get_level()，数值会自动同步到客户端；升级后这里会跟着变
             levelLabel.bind(DataBindingBuilder.componentS2C(
-                    () -> Component.literal("等级：" + center.get_level() + " 级")).build());
+                    () -> Component.literal("等级：" + center.get_level() + " / " + center.max_level)).build());
         } else {
             levelLabel.setText("等级：--");
         }
 
+        // ---- 正文：内容随 page 变化，仍然是服务端算好推过来 ----
         Label body = new Label();
-        body.setText("居民：0 / 4\n建筑：0 / 3");
         body.layout(l -> l.flexGrow(1));
+        if (center != null) {
+            body.bind(DataBindingBuilder.componentS2C(
+                    () -> Component.literal(pageText(page[0], center, holder.player))).build());
+        } else {
+            body.setText("居民：--\n建筑：--");
+        }
+
+        // ---- 升级页专用按钮：只有停在升级页时才显示 ----
+        Button btnDoUpgrade = new Button();
+        btnDoUpgrade.setText("升级镇中心");
+        btnDoUpgrade.layout(l -> l.width(96).height(18));
+        btnDoUpgrade.setVisible(false);
+        if (center != null) {
+            SimpleBinding<Boolean> onUpgradePage = DataBindingBuilder.boolS2C(() -> page[0] == 3).build();
+            onUpgradePage.registerListener(show -> btnDoUpgrade.setVisible(Boolean.TRUE.equals(show)));
+        }
+        // 真正的升级动作必须在服务端执行（要扣物品、扣经济、改数据）
+        btnDoUpgrade.setOnServerClick(e -> {
+            if (center == null) return;
+            ServerPlayer sp = (ServerPlayer) holder.player;
+            int before = center.get_level();
+            center.shengji(sp);
+            int after = center.get_level();
+            if (after > before) {
+                sp.displayClientMessage(Component.literal("小镇升级到 " + after + " 级"), true);
+            } else {
+                sp.displayClientMessage(Component.literal("材料或经济不够，升级失败"), true);
+            }
+        });
 
         UIElement content = new UIElement();
         content.layout(l -> l.flexDirection(FlexDirection.COLUMN)
                 .flexGrow(1).heightPercent(100).paddingAll(8).gapAll(6));
-        content.addChildren(title, hint, nameRow, levelLabel, body);
+        content.addChildren(title, hint, nameRow, levelLabel, body, btnDoUpgrade);
 
         // ---- 左侧边栏 ----
         UIElement sidebar = new UIElement();
@@ -167,28 +206,23 @@ public class centerblock extends Block implements BlockUIMenuType.BlockUI, Entit
         Button btnOverview = new Button();
         btnOverview.setText("概览");
         btnOverview.layout(l -> l.widthPercent(100).height(20));
-        // 只换正文，标题留给镇名（标题是绑定上去的，改它会断开显示）
-        btnOverview.setOnClick(e -> body.setText("居民：0 / 4\n建筑：0 / 3"));
+        btnOverview.setOnServerClick(e -> page[0] = 0);
 
         Button btnResidents = new Button();
         btnResidents.setText("居民");
         btnResidents.layout(l -> l.widthPercent(100).height(20));
-        btnResidents.setOnClick(e -> body.setText("还没有居民。\n先放一个住房建筑。"));
+        btnResidents.setOnServerClick(e -> page[0] = 1);
 
         Button btnBuildings = new Button();
         btnBuildings.setText("建筑");
         btnBuildings.layout(l -> l.widthPercent(100).height(20));
-        btnBuildings.setOnClick(e -> body.setText("已建：0\n上限：3"));
+        btnBuildings.setOnServerClick(e -> page[0] = 2);
 
         Button btnUpgrade = new Button();
         btnUpgrade.setText("升级");
         btnUpgrade.layout(l -> l.widthPercent(100).height(20));
-        // setOnServerClick 的回调在服务端执行，所以能安全改方块实体里的数据
-        btnUpgrade.setOnServerClick(e -> {
-            if (center != null) {
-                center.shengji();
-            }
-        });
+        // 只切到升级页，真正的升级在页内的"升级镇中心"按钮上，避免误点
+        btnUpgrade.setOnServerClick(e -> page[0] = 3);
 
         Button btnAbandon = new Button();
         btnAbandon.setText("放弃小镇");
@@ -217,7 +251,70 @@ public class centerblock extends Block implements BlockUIMenuType.BlockUI, Entit
                 holder.player);
     }
 
+    // ======== 正文文案（服务端算） ========
 
+    private static String pageText(int page, centerBlockEntity c, Player p) {
+        return switch (page) {
+            case 1 -> "居民：" + c.get_now_resident() + " / " + c.now_max_resident;
+            case 2 -> "建筑：0 / 3";
+            case 3 -> upgradeText(c, p);
+            default -> "居民：" + c.get_now_resident() + " / " + c.now_max_resident
+                    + "\n建筑：0 / 3";
+        };
+    }
 
+    /** 升级页：列出这一级要什么、你有多少。数值与 shengji() 里的判断保持一致。 */
+    private static String upgradeText(centerBlockEntity c, Player p) {
+        int lv = c.get_level();
+        if (lv >= c.max_level) {
+            return "等级：" + lv + " / " + c.max_level + "\n已经最高级了。";
+        }
 
+        Item need;
+        int needCount;
+        int needJingji;
+        switch (lv) {
+            case 1 -> {
+                need = Items.IRON_INGOT;
+                needCount = 64;
+                needJingji = 10;
+            }
+            case 2 -> {
+                need = Items.GOLD_INGOT;
+                needCount = 64;
+                needJingji = 500;
+            }
+            case 3 -> {
+                need = Items.DIAMOND;
+                needCount = 64;
+                needJingji = 5000;
+            }
+            default -> {
+                need = Items.NETHER_STAR;
+                needCount = 1;
+                needJingji = 20000;
+            }
+        }
+
+        int haveItem = countItem(p, need);
+        int haveJingji = p.getData(SimulationTown.PLAYER_JINGJI);
+
+        String itemName = need.getDescription().getString();
+        return "升级到 " + (lv + 1) + " 级需要："
+                + "\n" + (haveItem >= needCount ? "✔" : "✘") + " " + itemName
+                + " " + haveItem + " / " + needCount
+                + "\n" + (haveJingji >= needJingji ? "✔" : "✘") + " 经济 "
+                + haveJingji + " / " + needJingji;
+    }
+
+    /** 数玩家背包里某种物品的总数。 */
+    private static int countItem(Player p, Item item) {
+        int n = 0;
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack st = inv.getItem(i);
+            if (st.is(item)) n += st.getCount();
+        }
+        return n;
+    }
 }

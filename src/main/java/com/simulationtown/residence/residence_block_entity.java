@@ -12,6 +12,8 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 public class residence_block_entity extends BlockEntity implements BuildingData {
     public String r_building_id = "";
     int[] r_building_box ;
+    int r_GDP;
+    int r_block_count;
 
     /** 雇佣的 NPC 名字 */
     public String employ_npc = "";
@@ -33,6 +35,8 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         tag.putString("builder_name", this.builder_name);
         tag.putBoolean("build_state", this.i_build_state);
         tag.putDouble("completion", this.i_Completion_level);
+        tag.putInt("r_block_count",this.r_block_count);
+        tag.putInt("r_GDP",this.r_GDP);
         if  (this.r_building_box!=null){
             tag.putIntArray("r_building_box",this.r_building_box);
         }
@@ -50,6 +54,8 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         this.i_Completion_level = tag.getDouble("completion");
         this.r_building_box=tag.getIntArray("r_building_box");
         this.r_building_id=tag.getString("r_building_id");
+        this.r_block_count=tag.getInt("r_block_count");
+        this.r_GDP=tag.getInt("r_GDP");
     }
 
     public void setBuildingBounds(BoundingBox box) {
@@ -77,6 +83,24 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
 
     public String getBuildingId() {
         return this.r_building_id;
+    }
+
+    public int get_r_block_count(){
+        return this.r_block_count;
+    }
+    public void sava_r_block_count(){
+        if (this.r_block_count !=0){
+            this.setChanged();
+        }
+    }
+
+    public int get_r_GDP(){
+        return this.r_GDP;
+    }
+    public void sava_r_GDP(){
+        if (this.r_GDP !=0){
+            this.setChanged();
+        }
     }
 
     @Override

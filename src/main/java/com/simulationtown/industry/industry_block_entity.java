@@ -12,6 +12,8 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 public class industry_block_entity extends BlockEntity implements BuildingData {
     public String i_building_id = "";
     int[] i_building_box ;
+    int i_GDP;
+    int i_block_count;
 
     /** 雇佣的 NPC 名字 */
     public String employ_npc = "";
@@ -21,6 +23,7 @@ public class industry_block_entity extends BlockEntity implements BuildingData {
     public boolean i_build_state = false;
     /** 完成度 0.0 ~ 1.0 */
     public double i_Completion_level = 0.0;
+
 
     public industry_block_entity(BlockPos pos, BlockState state) {
         super(block.IBE.get(), pos, state);
@@ -33,12 +36,15 @@ public class industry_block_entity extends BlockEntity implements BuildingData {
         tag.putString("builder_name", this.builder_name);
         tag.putBoolean("build_state", this.i_build_state);
         tag.putDouble("completion", this.i_Completion_level);
+        tag.putInt("i_GDP",this.i_GDP);
+        tag.putInt("i_block_count",this.i_block_count);
         if  (this.i_building_box!=null){
             tag.putIntArray("i_building_box",this.i_building_box);
         }
         if (this.i_building_id!=null){
             tag.putString("i_building_id",this.i_building_id);
         }
+
     }
 
     @Override
@@ -50,6 +56,8 @@ public class industry_block_entity extends BlockEntity implements BuildingData {
         this.i_Completion_level = tag.getDouble("completion");
         this.i_building_box=tag.getIntArray("i_building_box");
         this.i_building_id=tag.getString("i_building_id");
+        this.i_GDP=tag.getInt("i_GDP");
+        this.i_block_count=tag.getInt("i_block_acount");
     }
 
     public void setBuildingBounds(BoundingBox box) {
@@ -77,6 +85,23 @@ public class industry_block_entity extends BlockEntity implements BuildingData {
 
     public String getBuildingId() {
         return this.i_building_id;
+    }
+
+    public int get_i_GDP(){
+        return this.i_GDP;
+    }
+    public void sava_i_GDP(){
+        if (this.i_GDP !=0){
+            this.setChanged();
+        }
+    }
+    public int get_i_block_count(){
+        return this.i_block_count;
+    }
+    public void sava_i_block_count(){
+        if (this.i_block_count !=0){
+            this.setChanged();
+        }
     }
 
     @Override

@@ -43,23 +43,28 @@ public class listen_event {
                 box.maxX(), box.maxY(), box.maxZ())) {
             if (level.getBlockEntity(pos) instanceof residence_block_entity be) {
                 be.setBuildingId(buildingId);
-                be.setBuildingBounds(box);      // ← 同一个 box 写进去
+                be.setBuildingBounds(box);
+                be.setBuildFinished(true);
+                be.setCompletion(1.0);
             }
             if (level.getBlockEntity(pos) instanceof special_block_entity be) {
                 be.setBuildingId(buildingId);
-                be.setBuildingBounds(box);      // ← 同一个 box 写进去
+                be.setBuildingBounds(box);
+                be.setBuildFinished(true);
+                be.setCompletion(1.0);
             }
             if (level.getBlockEntity(pos) instanceof industry_block_entity be) {
                 be.setBuildingId(buildingId);
-                be.setBuildingBounds(box);      // ← 同一个 box 写进去
+                be.setBuildingBounds(box);
+                be.setBuildFinished(true);
+                be.setCompletion(1.0);
             }
             if (level.getBlockEntity(pos) instanceof agriculture_block_entity be) {
                 be.setBuildingId(buildingId);
-                be.setBuildingBounds(box);      // ← 同一个 box 写进去
+                be.setBuildingBounds(box);
+                be.setBuildFinished(true);
+                be.setCompletion(1.0);
             }
-
-            // 其它三个分类同理
-
 
         }
     }

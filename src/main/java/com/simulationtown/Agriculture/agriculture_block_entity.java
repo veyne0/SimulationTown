@@ -12,14 +12,16 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 public class agriculture_block_entity extends BlockEntity implements BuildingData {
     public String a_building_id = "";
     int[] a_building_box ;
+    int a_GDP;
+    int a_block_count;
 
-    /** 雇佣的 NPC的名字 */
+    /*雇佣的 NPC的名字 */
     public String employ_npc = "";
-    /** 建造这个建筑的 NPC 名字 */
+    /*建造这个建筑的 NPC 名字 */
     public String builder_name = "";
-    /** 是否建造完成 */
+    /*是否建造完成 */
     public boolean i_build_state = false;
-    /** 完成度 0.0 ~ 1.0 */
+    /*完成度 0.0 ~ 1.0 */
     public double i_Completion_level = 0.0;
 
     public agriculture_block_entity(BlockPos pos, BlockState state) {
@@ -35,6 +37,8 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         tag.putString("builder_name", this.builder_name);
         tag.putBoolean("build_state", this.i_build_state);
         tag.putDouble("completion", this.i_Completion_level);
+        tag.putInt("a_GDP",this.a_GDP);
+        tag.putInt("a_block_count",this.a_block_count);
         if  (this.a_building_box!=null){
             tag.putIntArray("a_building_box",this.a_building_box);
         }
@@ -52,6 +56,8 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         this.i_Completion_level = tag.getDouble("completion");
         this.a_building_box=tag.getIntArray("a_building_box");
         this.a_building_id=tag.getString("a_building_id");
+        this.a_GDP=tag.getInt("a_GDP");
+        this.a_block_count=tag.getInt("a_block_count");
     }
 
 
@@ -67,6 +73,7 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         }
 
     }
+
     public BoundingBox getBuildingBounds() {
         if (a_building_box == null || a_building_box.length != 6) return null;
         return new BoundingBox(a_building_box[0], a_building_box[1], a_building_box[2],
@@ -101,7 +108,24 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         return this.i_Completion_level;
     }
 
-    // ---- 给以后写建造逻辑用的写入方法 ----
+    public int get_a_GDP(){
+        return this.a_GDP;
+    }
+    public void sava_a_GDP(){
+        if (this.a_GDP !=0){
+            this.setChanged();
+        }
+    }
+    public int get_a_block_count(){
+        return this.a_block_count;
+    }
+    public void sava_a_block_count(){
+        if (this.a_block_count !=0){
+            this.setChanged();
+        }
+    }
+
+
     public void setEmployNpc(String name) {
         this.employ_npc = name == null ? "" : name;
         this.setChanged();
