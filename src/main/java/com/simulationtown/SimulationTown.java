@@ -111,7 +111,7 @@ public class SimulationTown {
 
     /*这个是小镇的GDP*/
     public static final Supplier<AttachmentType<Double>> TOWN_GDP =
-            ATTACHMENT_TYPES.register("TOWN_GDP", () ->
+            ATTACHMENT_TYPES.register("town_gdp", () ->
                     AttachmentType.builder(() -> 0.0)
                             .serialize(Codec.DOUBLE) // 用原版的序列化
                             .sync(ByteBufCodecs.DOUBLE)

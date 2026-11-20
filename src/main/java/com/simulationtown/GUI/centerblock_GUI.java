@@ -100,15 +100,7 @@ public final class centerblock_GUI {
         nameRow.layout(l -> l.flexDirection(FlexDirection.ROW).gapAll(4).height(18));
         nameRow.addChildren(nameField, btnConfirm);
 
-        // 已经有名字就整行藏起来。判断仍然只在服务端算，客户端跟着这个布尔值走
-        if (center != null) {
-            SimpleBinding<Boolean> namedBinding = DataBindingBuilder.boolS2C(() -> {
-                String n = center.town_name;
-                return n != null && !n.isEmpty();
-            }).build();
-            namedBinding.registerListener(isNamed ->
-                    nameRow.setVisible(!Boolean.TRUE.equals(isNamed)));
-        }
+        // 命名行的显隐不在这里定：它要和侧边栏一起切，见文件末尾的 namedLabel
 
         Label levelLabel = new Label();
         levelLabel.layout(l -> l.height(12));
@@ -135,10 +127,7 @@ public final class centerblock_GUI {
         btnDoUpgrade.setText("升级镇中心");
         btnDoUpgrade.layout(l -> l.width(96).height(18));
         btnDoUpgrade.setVisible(false);
-        if (center != null) {
-            SimpleBinding<Boolean> onUpgradePage = DataBindingBuilder.boolS2C(() -> page[0] == 3).build();
-            onUpgradePage.registerListener(show -> btnDoUpgrade.setVisible(Boolean.TRUE.equals(show)));
-        }
+        // 只有停在升级页时才显示，显隐由文件末尾的 pageLabel 绑定控制
         // 真正的升级动作必须在服务端执行（要扣物品、扣经济、改数据）
         btnDoUpgrade.setOnServerClick(e -> {
             if (center == null) return;
@@ -156,7 +145,17 @@ public final class centerblock_GUI {
         UIElement content = new UIElement();
         content.layout(l -> l.flexDirection(FlexDirection.COLUMN)
                 .flexGrow(1).heightPercent(100).paddingAll(8).gapAll(6));
-        content.addChildren(title, hint, nameRow, levelLabel, body, btnDoUpgrade);
+        UIElement rest = new UIElement();
+        rest.layout(l -> l.flexDirection(FlexDirection.COLUMN).flexGrow(1).gapAll(6));
+        rest.addChildren(levelLabel, body, btnDoUpgrade);
+
+        // 两个隐藏 Label：文字分别是"有没有名字""是不是升级页"，回调里据此切显隐
+        Label namedLabel = new Label();
+        namedLabel.setVisible(false);
+        Label pageLabel = new Label();
+        pageLabel.setVisible(false);
+
+        content.addChildren(title, hint, nameRow, rest, namedLabel, pageLabel);
 
         // ---- 左侧边栏 ----
         UIElement sidebar = new UIElement();
@@ -205,6 +204,31 @@ public final class centerblock_GUI {
                 .width(320).height(200).paddingAll(6).gapAll(8));
         root.addClass("panel_bg");
         root.addChildren(sidebar, content);
+
+        // ---- 没名字：只留命名界面；有名字：藏起命名行，显示侧边栏和正文 ----
+        // center.name() 只有服务端有正确结果（客户端方块实体里没有 town_name），
+        // 所以判断用 S2C 绑定推给客户端。onRemoteSyncReceived 在第一次同步时也会触发，
+        // 而 registerListener 只在值变化时触发 —— 用它控件会一直停在初始状态。
+        if (center != null) {
+            namedLabel.bind(DataBindingBuilder.componentS2C(
+                            () -> Component.literal(center.town_name != null && center.name() ? "1" : "0"))
+                    .onRemoteSyncReceived(c -> {
+                        boolean ok = "1".equals(c.getString());
+                        nameRow.setVisible(!ok);
+                        sidebar.setVisible(ok);
+                        rest.setVisible(ok);
+                    }).build());
+
+            pageLabel.bind(DataBindingBuilder.componentS2C(
+                            () -> Component.literal(page[0] == 3 ? "1" : "0"))
+                    .onRemoteSyncReceived(c -> btnDoUpgrade.setVisible("1".equals(c.getString())))
+                    .build());
+        } else {
+            // 拿不到方块实体（理论上不会发生）：只留命名界面，别让玩家点出事
+            nameRow.setVisible(true);
+            sidebar.setVisible(false);
+            rest.setVisible(false);
+        }
 
         return ModularUI.of(
                 UI.of(root, StylesheetManager.INSTANCE.getStylesheetSafe(StylesheetManager.GDP)),

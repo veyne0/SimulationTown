@@ -142,6 +142,13 @@ public class centerBlockEntity extends BlockEntity {
        this.now_resident=nr;
        this.setChanged();
     }
+    public boolean name(){
+        if(this.town_name.isEmpty()){
+            return false;
+        }else{
+            return true;
+        }
 
+        }
 
 }
