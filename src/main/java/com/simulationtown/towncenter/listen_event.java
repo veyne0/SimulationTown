@@ -4,9 +4,7 @@ import com.buildlib.api.BuildCompletedEvent;
 import com.simulationtown.Agriculture.agriculture_block_entity;
 import com.simulationtown.SimulationTown;
 import com.simulationtown.block;
-import com.simulationtown.industry.industry_block_entity;
-import com.simulationtown.residence.residence_block_entity;
-import com.simulationtown.special.special_block_entity;
+import com.simulationtown.building.BuildingData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -41,31 +39,14 @@ public class listen_event {
 
         for (BlockPos pos : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(),
                 box.maxX(), box.maxY(), box.maxZ())) {
-            if (level.getBlockEntity(pos) instanceof residence_block_entity be) {
+            // 统一走 BuildingData 接口 (4 类管理方块同一套绑定写入)
+            if (level.getBlockEntity(pos) instanceof BuildingData be) {
                 be.setBuildingId(buildingId);
                 be.setBuildingBounds(box);
+                be.setRotationSteps(e.getRotationSteps());   // 旋转量持久化, NPC 重建用
                 be.setBuildFinished(true);
                 be.setCompletion(1.0);
             }
-            if (level.getBlockEntity(pos) instanceof special_block_entity be) {
-                be.setBuildingId(buildingId);
-                be.setBuildingBounds(box);
-                be.setBuildFinished(true);
-                be.setCompletion(1.0);
-            }
-            if (level.getBlockEntity(pos) instanceof industry_block_entity be) {
-                be.setBuildingId(buildingId);
-                be.setBuildingBounds(box);
-                be.setBuildFinished(true);
-                be.setCompletion(1.0);
-            }
-            if (level.getBlockEntity(pos) instanceof agriculture_block_entity be) {
-                be.setBuildingId(buildingId);
-                be.setBuildingBounds(box);
-                be.setBuildFinished(true);
-                be.setCompletion(1.0);
-            }
-
         }
     }
 

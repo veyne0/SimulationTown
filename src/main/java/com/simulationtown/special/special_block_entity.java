@@ -15,6 +15,8 @@ public class special_block_entity extends BlockEntity implements BuildingData {
     public String s_building_id = "";
     int[] s_building_box ;
     public UUID s_builder_UUID;
+    /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
+    public int s_rotation_steps = 0;
 
     public String employ_npc = "";
     public String builder_name = "";
@@ -31,6 +33,7 @@ public class special_block_entity extends BlockEntity implements BuildingData {
         tag.putString("builder_name", this.builder_name);
         tag.putBoolean("build_state", this.i_build_state);
         tag.putDouble("completion", this.i_Completion_level);
+        tag.putInt("s_rotation_steps",this.s_rotation_steps);
         if  (this.s_building_box!=null){
             tag.putIntArray("s_building_box",this.s_building_box);
         }
@@ -50,7 +53,10 @@ public class special_block_entity extends BlockEntity implements BuildingData {
 
         this.s_building_box=tag.getIntArray("s_building_box");
         this.s_building_id=tag.getString("s_building_id");
-        this.s_builder_UUID=tag.getUUID("s_builder_UUID");
+        this.s_rotation_steps=tag.getInt("s_rotation_steps");
+        if (tag.hasUUID("s_builder_UUID")) {
+            this.s_builder_UUID=tag.getUUID("s_builder_UUID");   // 旧存档没有此键时保持 null, 不炸
+        }
     }
 
     public UUID s_get_builder_UUID(){
@@ -130,5 +136,21 @@ public class special_block_entity extends BlockEntity implements BuildingData {
     public void setBuildFinished(boolean finished) {
         this.i_build_state = finished;
         this.setChanged();
+    }
+
+    @Override
+    public int getRotationSteps() {
+        return this.s_rotation_steps;
+    }
+
+    @Override
+    public void setRotationSteps(int steps) {
+        this.s_rotation_steps = ((steps % 4) + 4) % 4;
+        this.setChanged();
+    }
+
+    @Override
+    public BlockPos getBindPos() {
+        return this.getBlockPos();
     }
 }

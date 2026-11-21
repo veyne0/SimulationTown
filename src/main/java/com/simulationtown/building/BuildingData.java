@@ -1,5 +1,6 @@
 package com.simulationtown.building;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 /** 所有"建筑本体"方块实体的公共读取接口，UI 只认这个，不关心是哪个分类。 */
@@ -16,4 +17,12 @@ public interface BuildingData {
     void setBuildingBounds(BoundingBox box);
     void setBuildFinished(boolean finished);
     void setCompletion(double value);
+
+    // ---- NPC 重建需要的信息 (buildlib 读取) ----
+    /** 建造时的旋转步数 0~3 */
+    int getRotationSteps();
+    /** 绑定后写回旋转量 (建造完成事件里调) */
+    void setRotationSteps(int steps);
+    /** 这个管理方块自己的坐标 (任务持久化后按坐标找回 BE) */
+    BlockPos getBindPos();
 }

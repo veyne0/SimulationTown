@@ -17,6 +17,8 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
     public int a_GDP;
     public int a_block_count;
     public UUID a_builder_UUID;
+    /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
+    public int a_rotation_steps = 0;
 
     /*雇佣的 NPC的名字 */
     public String employ_npc = "";
@@ -42,6 +44,7 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         tag.putDouble("completion", this.i_Completion_level);
         tag.putInt("a_GDP",this.a_GDP);
         tag.putInt("a_block_count",this.a_block_count);
+        tag.putInt("a_rotation_steps",this.a_rotation_steps);
         if  (this.a_building_box!=null){
             tag.putIntArray("a_building_box",this.a_building_box);
         }
@@ -62,7 +65,10 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         this.a_building_id=tag.getString("a_building_id");
         this.a_GDP=tag.getInt("a_GDP");
         this.a_block_count=tag.getInt("a_block_count");
-        this.a_builder_UUID=tag.getUUID("a_builder_UUID");
+        this.a_rotation_steps=tag.getInt("a_rotation_steps");
+        if (tag.hasUUID("a_builder_UUID")) {
+            this.a_builder_UUID=tag.getUUID("a_builder_UUID");   // 旧存档没有此键时保持 null, 不炸
+        }
     }
     public UUID a_get_builder_UUID(){
         return this.a_builder_UUID;
@@ -159,5 +165,21 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
     public void setBuildFinished(boolean finished) {
         this.i_build_state = finished;
         this.setChanged();
+    }
+
+    @Override
+    public int getRotationSteps() {
+        return this.a_rotation_steps;
+    }
+
+    @Override
+    public void setRotationSteps(int steps) {
+        this.a_rotation_steps = ((steps % 4) + 4) % 4;
+        this.setChanged();
+    }
+
+    @Override
+    public BlockPos getBindPos() {
+        return this.getBlockPos();
     }
 }

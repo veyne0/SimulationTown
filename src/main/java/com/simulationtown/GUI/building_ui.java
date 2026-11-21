@@ -9,12 +9,21 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.style.StylesheetManager;
 import dev.vfyjxf.taffy.style.FlexDirection;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import com.buildlib.api.BuildLibApi;
+import com.buildlib.api.NpcBuildApi;
+import com.simulationtown.NPC.NPC;
+import com.simulationtown.NPC.NPC_spawn;
 import com.simulationtown.building.BuildingData;
+import com.simulationtown.residence.residence_block_entity;
+import com.simulationtown.industry.industry_block_entity;
+import com.simulationtown.Agriculture.agriculture_block_entity;
+import com.simulationtown.special.special_block_entity;
 
 /** 建筑本体的界面。四个分类共用这一份，只有标题不一样。 */
 public final class building_ui {
@@ -105,16 +114,80 @@ public final class building_ui {
             data.setBuildingBounds(null);
             data.setBuildFinished(false);
             data.setCompletion(0.0);
+            writeEmploy(be, null);              // 雇佣/建造者也清掉，拆了才能重新招人
+        });
+
+        // 雇佣建造：生成一个 NPC 到工地顶上，指派 NPC 建造任务（走 buildlib 的 NpcBuildApi）
+        Button btnHire = new Button();
+        btnHire.setText("雇佣建造");
+        btnHire.layout(l -> l.width(72).height(18));
+        btnHire.setOnServerClick(e -> {
+            if (data == null || !(be.getLevel() instanceof ServerLevel level)) return;
+
+            String employed = data.getEmployNpc();
+            if (employed != null && !employed.isEmpty()) {
+                holder.player.sendSystemMessage(Component.literal(
+                        "这座建筑已有雇佣：" + employed).withStyle(ChatFormatting.YELLOW));
+                return;
+            }
+            String id = data.getBuildingId();
+            BoundingBox b = data.getBuildingBounds();
+            if (id == null || id.isEmpty() || b == null) {
+                holder.player.sendSystemMessage(Component.literal(
+                        "建筑还没绑定蓝图，先用预览建造一次").withStyle(ChatFormatting.RED));
+                return;
+            }
+
+            // 出生点：工地顶面中心（bounds.maxY 顶上是空气，落地后再自己走下来）
+            BlockPos spawnPos = new BlockPos(b.getCenter().getX(), b.maxY() + 1, b.getCenter().getZ());
+            NPC npc = NPC_spawn.spawnNPC(level, spawnPos);
+            if (npc == null) {
+                holder.player.sendSystemMessage(Component.literal(
+                        "NPC 生成失败").withStyle(ChatFormatting.RED));
+                return;
+            }
+
+            if (NpcBuildApi.startBuild(npc, data, level) == null) {
+                npc.discard();   // 指派失败（nbt 解析不到方块）就把刚生成的 NPC 收回
+                holder.player.sendSystemMessage(Component.literal(
+                        "建造任务指派失败，详见日志").withStyle(ChatFormatting.RED));
+                return;
+            }
+
+            writeEmploy(be, npc.getName().getString());
+            holder.player.sendSystemMessage(Component.literal(
+                    "已雇佣 " + npc.getName().getString() + " 开工；材料从他背包扣，右键 NPC 可以塞料")
+                    .withStyle(ChatFormatting.GREEN));
         });
 
         UIElement buttons = new UIElement();
         buttons.layout(l -> l.flexDirection(FlexDirection.ROW).gapAll(6).height(18));
-        buttons.addChildren(btnShow, btnDemolish);
+        buttons.addChildren(btnShow, btnDemolish, btnHire);
 
         root.addChildren(title, state, completion, builder, employ, boxLabel, buttons);
 
         return ModularUI.of(
                 UI.of(root, StylesheetManager.INSTANCE.getStylesheetSafe(StylesheetManager.GDP)),
                 holder.player);
+    }
+
+    /**
+     * 写雇佣/建造者名字（setEmployNpc 不在 BuildingData 接口上，按 4 个具体 BE 分发）。
+     * name 传 null 清空。匹配不上任何分类 BE 就什么都不写。
+     */
+    private static void writeEmploy(BlockEntity be, String name) {
+        if (be instanceof residence_block_entity r) {
+            r.setEmployNpc(name);
+            r.setBuilderName(name);
+        } else if (be instanceof industry_block_entity i) {
+            i.setEmployNpc(name);
+            i.setBuilderName(name);
+        } else if (be instanceof agriculture_block_entity a) {
+            a.setEmployNpc(name);
+            a.setBuilderName(name);
+        } else if (be instanceof special_block_entity s) {
+            s.setEmployNpc(name);
+            s.setBuilderName(name);
+        }
     }
 }

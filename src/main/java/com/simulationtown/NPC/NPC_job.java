@@ -6,3 +6,4 @@ public enum NPC_job {
     WORKER,      // 工人: 工业建筑
     RESIDENT;    //居民
 }
+

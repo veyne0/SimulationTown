@@ -2,7 +2,9 @@ package com.simulationtown;
 
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
+import com.simulationtown.NPC.NPC_register;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.CreativeModeTab;
@@ -20,6 +22,7 @@ import org.slf4j.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.simulationtown.block.BLOCK_ITEM;
@@ -50,6 +53,7 @@ public class SimulationTown {
         block.BLOCKS.register(modEventBus);
         block.ITEMS.register(modEventBus);
         block.BLOCK_ENTITY_TYPES.register(modEventBus);
+        NPC_register.ENTITIES.register(modEventBus);
 
         SimulationTown.ATTACHMENT_TYPES.register(modEventBus);
 
@@ -116,6 +120,14 @@ public class SimulationTown {
                     AttachmentType.builder(() -> 0.0)
                             .serialize(Codec.DOUBLE) // 用原版的序列化
                             .sync(ByteBufCodecs.DOUBLE)
+                            .copyOnDeath()
+                            .build());
+
+    public static final Supplier<AttachmentType<UUID>> NPC_TALKING =
+            ATTACHMENT_TYPES.register("npc_talking", () ->
+                    AttachmentType.builder(() -> (UUID) null)
+                            .serialize(UUIDUtil.CODEC)
+                            .sync(UUIDUtil.STREAM_CODEC)
                             .copyOnDeath()
                             .build());
 

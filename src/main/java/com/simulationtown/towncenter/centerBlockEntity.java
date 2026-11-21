@@ -27,6 +27,7 @@ public class centerBlockEntity extends BlockEntity {
     BlockPos pos ;
     public String town_name;
     public int resident_building_count;
+    public int NPC_count;
 
    public centerBlockEntity(BlockPos pos , BlockState state){
        super(block.CBE.get(),pos ,state);
@@ -43,6 +44,8 @@ public class centerBlockEntity extends BlockEntity {
        }
        tag.putInt("now_resident",this.now_resident);
        tag.putInt("now_max_resident",this.now_max_resident);
+       tag.putInt("NPC_count",this.NPC_count);
+       tag.putInt("resident_building_count",this.resident_building_count);
    }
 
     @Override
@@ -52,9 +55,19 @@ public class centerBlockEntity extends BlockEntity {
         if (tag.hasUUID("UUID")) {
             this.player_UUID = tag.getUUID("UUID"); // 读出来
         }
+
         this.town_name=tag.getString("name");
         this.now_resident=tag.getInt("now_resident");
         this.now_max_resident=tag.getInt("now_max_resident");
+        this.resident_building_count=tag.getInt("resident_building_count");
+        this.NPC_count=tag.getInt("NPC_count");
+    }
+
+    public void add_NPC_count(int count){
+       this.NPC_count+=count;
+    }
+    public void add_resident_building_count(){
+       this.resident_building_count+=1;
     }
     /*
     升级镇中心用的
@@ -66,6 +79,7 @@ public class centerBlockEntity extends BlockEntity {
            if (jing_ji >=10){
                xiaohao(player, Items.IRON_INGOT,64);
                this.level +=1;
+               this.now_max_resident=10;
                player.setData(SimulationTown.PLAYER_JINGJI,jing_ji-10);
                this.setChanged();
            }
@@ -76,6 +90,7 @@ public class centerBlockEntity extends BlockEntity {
             if (jing_ji >= 500) {
                 xiaohao(player, Items.GOLD_INGOT, 64);
                 this.level += 1;
+                this.now_max_resident=30;
                 player.setData(SimulationTown.PLAYER_JINGJI, jing_ji - 500);
                 this.setChanged();
             }
@@ -84,6 +99,7 @@ public class centerBlockEntity extends BlockEntity {
             if (jing_ji >= 5000) {
                 xiaohao(player, Items.DIAMOND, 64);
                 this.level += 1;
+                this.now_max_resident=70;
                 player.setData(SimulationTown.PLAYER_JINGJI, jing_ji - 5000);
                 this.setChanged();
             }
@@ -95,6 +111,7 @@ public class centerBlockEntity extends BlockEntity {
             if (jing_ji >= 20000) {
                 xiaohao(player, Items.NETHER_STAR, 1);
                 this.level += 1;
+                this.now_max_resident=100;
                 player.setData(SimulationTown.PLAYER_JINGJI, jing_ji -20000);
                 this.setChanged();
             }

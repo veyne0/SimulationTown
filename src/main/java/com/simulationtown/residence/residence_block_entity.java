@@ -17,6 +17,9 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
     public int r_GDP;
     public int r_block_count;
     public UUID r_builder_UUID;
+    /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
+    public int r_rotation_steps = 0;
+
 
     /** 雇佣的 NPC 名字 */
     public String employ_npc = "";
@@ -40,13 +43,17 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         tag.putDouble("completion", this.i_Completion_level);
         tag.putInt("r_block_count",this.r_block_count);
         tag.putInt("r_GDP",this.r_GDP);
+        tag.putInt("r_rotation_steps",this.r_rotation_steps);
         if  (this.r_building_box!=null){
             tag.putIntArray("r_building_box",this.r_building_box);
         }
         if (this.r_building_id!=null){
             tag.putString("r_building_id",this.r_building_id);
         }
-        tag.putUUID("r_builder_UUID",this.r_builder_UUID);
+        if(r_builder_UUID!=null){
+            tag.putUUID("r_builder_UUID",this.r_builder_UUID);
+        }
+
     }
 
     @Override
@@ -60,7 +67,11 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         this.r_building_id=tag.getString("r_building_id");
         this.r_block_count=tag.getInt("r_block_count");
         this.r_GDP=tag.getInt("r_GDP");
-        this.r_builder_UUID=tag.getUUID("r_builder_UUID");
+        this.r_rotation_steps=tag.getInt("r_rotation_steps");
+        if(tag.hasUUID("r_builder_UUID")){
+            this.r_builder_UUID=tag.getUUID("r_builder_UUID");
+        }
+
     }
     public UUID r_get_builder_UUID(){
         return this.r_builder_UUID;
@@ -156,5 +167,21 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
     public void setBuildFinished(boolean finished) {
         this.i_build_state = finished;
         this.setChanged();
+    }
+
+    @Override
+    public int getRotationSteps() {
+        return this.r_rotation_steps;
+    }
+
+    @Override
+    public void setRotationSteps(int steps) {
+        this.r_rotation_steps = ((steps % 4) + 4) % 4;
+        this.setChanged();
+    }
+
+    @Override
+    public BlockPos getBindPos() {
+        return this.getBlockPos();
     }
 }

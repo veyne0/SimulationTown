@@ -11,12 +11,14 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.UUID;
 
-public class industry_block_entity extends BlockEntity implements BuildingData {
+public class industry_block_entity extends BlockEntity  {
     public String i_building_id = "";
     int[] i_building_box ;
     public int i_GDP;
     public int i_block_count;
     public UUID i_builder_UUID;
+    /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
+    public int i_rotation_steps = 0;
 
     /** 雇佣的 NPC 名字 */
     public String employ_npc = "";
@@ -41,6 +43,7 @@ public class industry_block_entity extends BlockEntity implements BuildingData {
         tag.putDouble("completion", this.i_Completion_level);
         tag.putInt("i_GDP",this.i_GDP);
         tag.putInt("i_block_count",this.i_block_count);
+        tag.putInt("i_rotation_steps",this.i_rotation_steps);
         if  (this.i_building_box!=null){
             tag.putIntArray("i_building_box",this.i_building_box);
         }
@@ -61,8 +64,11 @@ public class industry_block_entity extends BlockEntity implements BuildingData {
         this.i_building_box=tag.getIntArray("i_building_box");
         this.i_building_id=tag.getString("i_building_id");
         this.i_GDP=tag.getInt("i_GDP");
-        this.i_block_count=tag.getInt("i_block_acount");
-        this.i_builder_UUID=tag.getUUID("i_builder_UUID");
+        this.i_block_count=tag.getInt("i_block_count");   // 原来误写成 "i_block_acount", 键名对不上永远读到 0
+        this.i_rotation_steps=tag.getInt("i_rotation_steps");
+        if (tag.hasUUID("i_builder_UUID")) {
+            this.i_builder_UUID=tag.getUUID("i_builder_UUID");   // 旧存档没有此键时保持 null, 不炸
+        }
     }
     public UUID i_get_builder_UUID(){
         return this.i_builder_UUID;
@@ -118,22 +124,22 @@ public class industry_block_entity extends BlockEntity implements BuildingData {
         }
     }
 
-    @Override
+
     public String getEmployNpc() {
         return this.employ_npc;
     }
 
-    @Override
+
     public String getBuilderName() {
         return this.builder_name;
     }
 
-    @Override
+
     public boolean isBuildFinished() {
         return this.i_build_state;
     }
 
-    @Override
+
     public double getCompletionLevel() {
         return this.i_Completion_level;
     }
