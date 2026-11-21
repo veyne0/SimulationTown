@@ -96,6 +96,7 @@ public class SimulationTown {
             ATTACHMENT_TYPES.register("town_center_name", () ->
                     AttachmentType.builder(() -> (String)null)
                             .serialize(Codec.STRING) // 用原版的序列化
+                            .sync(ByteBufCodecs.STRING_UTF8)
                             .copyOnDeath()
                             .build());
 

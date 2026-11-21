@@ -9,11 +9,14 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
+import java.util.UUID;
+
 public class residence_block_entity extends BlockEntity implements BuildingData {
     public String r_building_id = "";
     int[] r_building_box ;
     public int r_GDP;
     public int r_block_count;
+    public UUID r_builder_UUID;
 
     /** 雇佣的 NPC 名字 */
     public String employ_npc = "";
@@ -43,6 +46,7 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         if (this.r_building_id!=null){
             tag.putString("r_building_id",this.r_building_id);
         }
+        tag.putUUID("r_builder_UUID",this.r_builder_UUID);
     }
 
     @Override
@@ -56,6 +60,16 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         this.r_building_id=tag.getString("r_building_id");
         this.r_block_count=tag.getInt("r_block_count");
         this.r_GDP=tag.getInt("r_GDP");
+        this.r_builder_UUID=tag.getUUID("r_builder_UUID");
+    }
+    public UUID r_get_builder_UUID(){
+        return this.r_builder_UUID;
+    }
+    public void r_sava_builder_uuid(UUID u3){
+        if(u3!=null){
+            this.r_builder_UUID=u3;
+            this.setChanged();
+        }
     }
 
     public void setBuildingBounds(BoundingBox box) {

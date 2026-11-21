@@ -12,8 +12,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.UUID;
 
-import static com.simulationtown.SimulationTown.TOWN_CENTER;
-import static com.simulationtown.SimulationTown.TOWN_CENTER_NAME;
+import static com.simulationtown.SimulationTown.*;
 import static com.simulationtown.towncenter.consume.hasItem;
 import static com.simulationtown.towncenter.consume.xiaohao;
 
@@ -27,6 +26,7 @@ public class centerBlockEntity extends BlockEntity {
     public int max_level=5;
     BlockPos pos ;
     public String town_name;
+    public int resident_building_count;
 
    public centerBlockEntity(BlockPos pos , BlockState state){
        super(block.CBE.get(),pos ,state);
@@ -125,8 +125,19 @@ public class centerBlockEntity extends BlockEntity {
         BlockPos a = player.getExistingDataOrNull(SimulationTown.TOWN_CENTER);
         if (a!=null){
             player.removeData(TOWN_CENTER);
+            player.removeData(TOWN_CENTER_NAME);
+            player.removeData(TOWN_GDP);
+            player.removeData(PLAYER_JINGJI);
         }
 
+    }
+    public void save_town_name(Player player,String n1){
+        String n=player.getData(TOWN_CENTER_NAME);
+        if (n==null ){
+            if(n1!=null && !n1.isEmpty()){
+                player.setData(TOWN_CENTER_NAME,n1);
+            }
+        }
     }
     public void jianli(Player player,String name){
        this.town_name =name;

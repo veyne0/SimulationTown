@@ -9,9 +9,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
+import java.util.UUID;
+
 public class special_block_entity extends BlockEntity implements BuildingData {
     public String s_building_id = "";
     int[] s_building_box ;
+    public UUID s_builder_UUID;
 
     public String employ_npc = "";
     public String builder_name = "";
@@ -34,6 +37,7 @@ public class special_block_entity extends BlockEntity implements BuildingData {
         if (this.s_building_id!=null){
             tag.putString("s_building_id",this.s_building_id);
         }
+        tag.putUUID("s_builder_UUID",this.s_builder_UUID);
     }
 
     @Override
@@ -46,6 +50,17 @@ public class special_block_entity extends BlockEntity implements BuildingData {
 
         this.s_building_box=tag.getIntArray("s_building_box");
         this.s_building_id=tag.getString("s_building_id");
+        this.s_builder_UUID=tag.getUUID("s_builder_UUID");
+    }
+
+    public UUID s_get_builder_UUID(){
+        return this.s_builder_UUID;
+    }
+    public void s_sava_builder_uuid(UUID u4){
+        if(u4!=null){
+            this.s_builder_UUID=u4;
+            this.setChanged();
+        }
     }
 
 

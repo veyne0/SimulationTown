@@ -9,11 +9,14 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
+import java.util.UUID;
+
 public class agriculture_block_entity extends BlockEntity implements BuildingData {
     public String a_building_id = "";
     int[] a_building_box ;
     public int a_GDP;
     public int a_block_count;
+    public UUID a_builder_UUID;
 
     /*雇佣的 NPC的名字 */
     public String employ_npc = "";
@@ -45,6 +48,7 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         if (this.a_building_id!=null){
             tag.putString("a_building_id",this.a_building_id);
         }
+        tag.putUUID("a_builder_UUID",this.a_builder_UUID);
     }
 
     @Override
@@ -58,6 +62,17 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         this.a_building_id=tag.getString("a_building_id");
         this.a_GDP=tag.getInt("a_GDP");
         this.a_block_count=tag.getInt("a_block_count");
+        this.a_builder_UUID=tag.getUUID("a_builder_UUID");
+    }
+    public UUID a_get_builder_UUID(){
+        return this.a_builder_UUID;
+    }
+    public void a_sava_builder_uuid(UUID u1){
+        if(u1!=null){
+            this.a_builder_UUID=u1;
+            this.setChanged();
+        }
+
     }
 
 
