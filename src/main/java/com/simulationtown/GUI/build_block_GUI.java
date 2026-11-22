@@ -53,8 +53,8 @@ public final class build_block_GUI {
     // 每页几张卡片。控件树两端必须一样，所以槽位数是写死的，只是每张卡显示的文字会变
     private static final int PAGE_SIZE = 4;
 
-    // 一张卡的高度
-    private static final float CARD_H = 26;
+    // 一张卡的高度（padding 3×2 + 名字 12 + 信息 10 = 28，再留 2 余量，防止溢出边框）
+    private static final float CARD_H = 30;
 
     /** 列表里的一行：名字 + 尺寸 + 方块数。 */
     private record Entry(String category, String name, String path, String size, int blocks) {
@@ -245,56 +245,63 @@ public final class build_block_GUI {
         catLabel.setVisible(false);
         content.addChild(catLabel);
 
-        // 卡片列：高 auto，被隐藏的卡片不占位置
+        // 卡片网格：2×2，每行两张平分宽度
         UIElement cards = new UIElement();
         cards.layout(l -> l.flexDirection(FlexDirection.COLUMN).widthPercent(100).gapAll(3));
         content.addChild(cards);
 
-        for (int i = 0; i < PAGE_SIZE; i++) {
-            final int slot = i;
+        for (int row = 0; row < PAGE_SIZE / 2; row++) {
+            UIElement rowEl = new UIElement();
+            rowEl.layout(l -> l.flexDirection(FlexDirection.ROW).widthPercent(100).height(CARD_H).gapAll(3));
+            cards.addChild(rowEl);
 
-            UIElement card = new UIElement();
-            card.layout(l -> l.flexDirection(FlexDirection.COLUMN).widthPercent(100).height(CARD_H)
-                    .paddingAll(3).gapAll(0));
-            card.addClass("panel_bg");
+            for (int col = 0; col < 2; col++) {
+                final int slot = row * 2 + col;
 
-            Label cardName = new Label();
-            cardName.layout(l -> l.height(12));
-            cardName.bind(DataBindingBuilder.componentS2C(
-                    () -> Component.literal(nameText(selected[0], page[0], slot))).build());
+                UIElement card = new UIElement();
+                card.layout(l -> l.flexDirection(FlexDirection.COLUMN).flexGrow(1).height(CARD_H)
+                        .paddingAll(3).gapAll(0));
+                card.addClass("panel_bg");
 
-            Label cardMeta = new Label();
-            cardMeta.layout(l -> l.height(10));
-            cardMeta.bind(DataBindingBuilder.componentS2C(
-                    () -> Component.literal(metaText(selected[0], page[0], slot))).build());
+                Label cardName = new Label();
+                cardName.layout(l -> l.height(12));
+                cardName.bind(DataBindingBuilder.componentS2C(
+                        () -> Component.literal(nameText(selected[0], page[0], slot))).build());
 
-            // 这一页没这么多建筑时把整张卡藏起来。
-            // SimpleBinding.registerListener 在第一次同步时不触发，所以用 onRemoteSyncReceived：
-            // 它就是在「收到对面推来的值」时调用，包括第一次。
-            Label visLabel = new Label();
-            visLabel.setVisible(false);
-            visLabel.bind(DataBindingBuilder.componentS2C(
-                            () -> Component.literal(at(selected[0], page[0] * PAGE_SIZE + slot) != null ? "1" : "0"))
-                    .onRemoteSyncReceived(c -> card.setVisible("1".equals(c.getString())))
-                    .build());
+                Label cardMeta = new Label();
+                cardMeta.layout(l -> l.height(10));
+                cardMeta.bind(DataBindingBuilder.componentS2C(
+                        () -> Component.literal(metaText(selected[0], page[0], slot))).build());
 
-            card.addChildren(visLabel, cardName, cardMeta);
+                // 这一页没这么多建筑时把整张卡藏起来。
+                // SimpleBinding.registerListener 在第一次同步时不触发，所以用 onRemoteSyncReceived：
+                // 它就是在「收到对面推来的值」时调用，包括第一次。
+                Label visLabel = new Label();
+                visLabel.setVisible(false);
+                visLabel.bind(DataBindingBuilder.componentS2C(
+                                () -> Component.literal(at(selected[0], page[0] * PAGE_SIZE + slot) != null ? "1" : "0"))
+                        .onRemoteSyncReceived(c -> card.setVisible("1".equals(c.getString())))
+                        .build());
 
-            // 点这一张 → 打开 buildlib 的幽灵方块预览（客户端事件，openPreview 是纯客户端 API）
-            card.addEventListener(UIEvents.CLICK, e -> {
-                String n = cardName.getText().getString();
-                String cat = catLabel.getText().getString();
-                if (n.isEmpty() || cat.isEmpty()) return;
-                String required = MANAGER_BLOCK.get(cat);
-                if (required == null) return;
-                Path path = BuildingScanner.resolveNbtPath(ROOT_DIR, new BuildingInfo(cat, n));
-                if (path == null) return;
-                // 第 2 参数 "分类/文件名"：建造完成事件里原样传回，用来写回方块实体
-                // 第 3 参数：管理方块，nbt 里没有它 → 客户端不开预览，服务端也拒绝建造
-                BuildLibApi.openPreview(path.toString(), cat + "/" + n, required);
-            });
+                card.addChildren(visLabel, cardName, cardMeta);
 
-            cards.addChild(card);
+                // 点这一张 → 打开 buildlib 的幽灵方块预览（客户端事件，openPreview 是纯客户端 API）
+                card.addEventListener(UIEvents.CLICK, e -> {
+                    String n = cardName.getText().getString();
+                    String cat = catLabel.getText().getString();
+                    if (n.isEmpty() || cat.isEmpty()) return;
+                    String required = MANAGER_BLOCK.get(cat);
+                    if (required == null) return;
+                    Path path = BuildingScanner.resolveNbtPath(ROOT_DIR, new BuildingInfo(cat, n));
+                    if (path == null) return;
+                    // 第 2 参数 "分类/文件名"：建造完成事件里原样传回，用来写回方块实体
+                    // 第 3 参数：管理方块，nbt 里没有它 → 客户端不开预览，服务端也拒绝建造
+                    // 第 4 参数 managerOnly：只放管理方块（本体等玩家雇佣 NPC 逐块盖）
+                    BuildLibApi.openPreview(path.toString(), cat + "/" + n, required, true);
+                });
+
+                rowEl.addChild(card);
+            }
         }
 
         // ---------- 翻页 ----------

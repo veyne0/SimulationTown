@@ -5,9 +5,8 @@ import com.mojang.serialization.Codec;
 import com.simulationtown.NPC.NPC_register;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -22,10 +21,12 @@ import org.slf4j.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import static com.simulationtown.block.BLOCK_ITEM;
+
 
 /**
  * 模组入口类。
@@ -128,6 +129,14 @@ public class SimulationTown {
                     AttachmentType.builder(() -> (UUID) null)
                             .serialize(UUIDUtil.CODEC)
                             .sync(UUIDUtil.STREAM_CODEC)
+                            .copyOnDeath()
+                            .build());
+
+
+    public static final Supplier<AttachmentType<List<CompoundTag>>> ALL_NPC =
+            ATTACHMENT_TYPES.register("all_npc", () ->
+                    AttachmentType.<List<CompoundTag>>builder(() -> new ArrayList<>())
+                            .serialize(CompoundTag.CODEC.listOf())   // ListTag 没有Codec, 但 List<CompoundTag> 有现成的
                             .copyOnDeath()
                             .build());
 

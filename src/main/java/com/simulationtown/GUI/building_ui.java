@@ -13,17 +13,24 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import com.buildlib.api.BuildLibApi;
 import com.buildlib.api.NpcBuildApi;
 import com.simulationtown.NPC.NPC;
-import com.simulationtown.NPC.NPC_spawn;
 import com.simulationtown.building.BuildingData;
 import com.simulationtown.residence.residence_block_entity;
 import com.simulationtown.industry.industry_block_entity;
 import com.simulationtown.Agriculture.agriculture_block_entity;
 import com.simulationtown.special.special_block_entity;
+import com.simulationtown.towncenter.centerBlockEntity;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /** 建筑本体的界面。四个分类共用这一份，只有标题不一样。 */
 public final class building_ui {
@@ -117,47 +124,38 @@ public final class building_ui {
             writeEmploy(be, null);              // 雇佣/建造者也清掉，拆了才能重新招人
         });
 
-        // 雇佣建造：生成一个 NPC 到工地顶上，指派 NPC 建造任务（走 buildlib 的 NpcBuildApi）
+        // 雇佣建造：打开二级选人界面（候选 = 玩家 ALL_NPC 名单里在场且空闲的 NPC）。
+        // LDLib2 控件树两端各建一份、只同步数据绑定，名单没法直接渲染成动态列表，
+        // 所以候选列表放在 npc_hire_ui 里用"固定槽位 + S2C 绑定"的方式展示。
         Button btnHire = new Button();
         btnHire.setText("雇佣建造");
         btnHire.layout(l -> l.width(72).height(18));
         btnHire.setOnServerClick(e -> {
-            if (data == null || !(be.getLevel() instanceof ServerLevel level)) return;
+            if (data == null || !(be.getLevel() instanceof ServerLevel level)
+                    || !(holder.player instanceof ServerPlayer sp)) return;
 
             String employed = data.getEmployNpc();
             if (employed != null && !employed.isEmpty()) {
-                holder.player.sendSystemMessage(Component.literal(
-                        "这座建筑已有雇佣：" + employed).withStyle(ChatFormatting.YELLOW));
+                sp.sendSystemMessage(Component.literal(
+                        "这里已有 " + employed + " 在建").withStyle(ChatFormatting.YELLOW));
                 return;
             }
             String id = data.getBuildingId();
             BoundingBox b = data.getBuildingBounds();
             if (id == null || id.isEmpty() || b == null) {
-                holder.player.sendSystemMessage(Component.literal(
-                        "建筑还没绑定蓝图，先用预览建造一次").withStyle(ChatFormatting.RED));
+                sp.sendSystemMessage(Component.literal(
+                        "还没绑定蓝图，先预览建造一次").withStyle(ChatFormatting.RED));
                 return;
             }
 
-            // 出生点：工地顶面中心（bounds.maxY 顶上是空气，落地后再自己走下来）
-            BlockPos spawnPos = new BlockPos(b.getCenter().getX(), b.maxY() + 1, b.getCenter().getZ());
-            NPC npc = NPC_spawn.spawnNPC(level, spawnPos);
-            if (npc == null) {
-                holder.player.sendSystemMessage(Component.literal(
-                        "NPC 生成失败").withStyle(ChatFormatting.RED));
+            List<String> idle = idleNpcs(sp, level);
+            if (idle.isEmpty()) {
+                sp.sendSystemMessage(Component.literal(
+                        "没有空闲的 NPC").withStyle(ChatFormatting.RED));
                 return;
             }
-
-            if (NpcBuildApi.startBuild(npc, data, level) == null) {
-                npc.discard();   // 指派失败（nbt 解析不到方块）就把刚生成的 NPC 收回
-                holder.player.sendSystemMessage(Component.literal(
-                        "建造任务指派失败，详见日志").withStyle(ChatFormatting.RED));
-                return;
-            }
-
-            writeEmploy(be, npc.getName().getString());
-            holder.player.sendSystemMessage(Component.literal(
-                    "已雇佣 " + npc.getName().getString() + " 开工；材料从他背包扣，右键 NPC 可以塞料")
-                    .withStyle(ChatFormatting.GREEN));
+            HIRE_SESSIONS.put(sp.getUUID(), new HireSession(be.getBlockPos(), idle, -1));
+            com.lowdragmc.lowdraglib2.gui.factory.PlayerUIMenuType.openUI(sp, npc_hire_ui.UI_ID);
         });
 
         UIElement buttons = new UIElement();
@@ -169,6 +167,59 @@ public final class building_ui {
         return ModularUI.of(
                 UI.of(root, StylesheetManager.INSTANCE.getStylesheetSafe(StylesheetManager.GDP)),
                 holder.player);
+    }
+
+    /**
+     * 选人会话（按玩家记）：buildingPos = 要雇人的建筑；candidates = 空闲 NPC 名单；
+     * selected = 当前选中的候选下标（-1 = 还没选）。
+     */
+    public record HireSession(BlockPos buildingPos, List<String> candidates, int selected) {}
+
+    public static final Map<UUID, HireSession> HIRE_SESSIONS = new HashMap<>();
+
+    /** 玩家名单里"在场且没有进行中建造任务"的 NPC 名字（按名单顺序）。 */
+    public static List<String> idleNpcs(ServerPlayer sp, ServerLevel level) {
+        List<String> out = new ArrayList<>();
+        List<String> names = centerBlockEntity.get_all_NPC_name(sp);
+        if (names == null) return out;
+        for (String n : names) {
+            UUID uuid = centerBlockEntity.get_all_NPC_uuid(sp, n);
+            if (uuid == null) continue;
+            if (level.getEntity(uuid) instanceof NPC npc && NpcBuildApi.progress(npc) < 0) {
+                out.add(n);
+            }
+        }
+        return out;
+    }
+
+    /** 把名字对应的 NPC 指派给这座建筑（owner = 当前玩家，缺料提示发给他）。失败返回 false。 */
+    public static boolean hire(ServerPlayer sp, ServerLevel level, BlockEntity be,
+                               BuildingData data, String name) {
+        UUID uuid = centerBlockEntity.get_all_NPC_uuid(sp, name);
+        if (uuid == null || !(level.getEntity(uuid) instanceof NPC npc)
+                || NpcBuildApi.progress(npc) >= 0) {
+            sp.sendSystemMessage(Component.literal(
+                    "「" + name + "」正忙，换一个吧").withStyle(ChatFormatting.RED));
+            return false;
+        }
+        if (NpcBuildApi.startBuild(npc, data, level, sp.getUUID()) == null) {
+            sp.sendSystemMessage(Component.literal(
+                    "指派失败，看下日志").withStyle(ChatFormatting.RED));
+            return false;
+        }
+        HIRE_SESSIONS.remove(sp.getUUID());   // 成功才清会话
+        writeEmploy(be, npc.getName().getString());
+        sp.sendSystemMessage(Component.literal(
+                name + " 开始建造 " + shortName(data.getBuildingId()))
+                .withStyle(ChatFormatting.GREEN));
+        return true;
+    }
+
+    /** 建筑显示名: "residence/测试住宅" → "测试住宅" */
+    public static String shortName(String buildingId) {
+        if (buildingId == null) return "";
+        int slash = buildingId.indexOf('/');
+        return slash < 0 ? buildingId : buildingId.substring(slash + 1);
     }
 
     /**

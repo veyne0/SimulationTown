@@ -44,8 +44,8 @@ public class listen_event {
                 be.setBuildingId(buildingId);
                 be.setBuildingBounds(box);
                 be.setRotationSteps(e.getRotationSteps());   // 旋转量持久化, NPC 重建用
-                be.setBuildFinished(true);
-                be.setCompletion(1.0);
+                be.setBuildFinished(false);
+                be.setCompletion(0.0);
             }
         }
     }

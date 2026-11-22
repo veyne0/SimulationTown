@@ -5,11 +5,14 @@ import com.simulationtown.block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static com.simulationtown.SimulationTown.*;
@@ -29,9 +32,43 @@ public class centerBlockEntity extends BlockEntity {
     public int resident_building_count;
     public int NPC_count;
 
-   public centerBlockEntity(BlockPos pos , BlockState state){
-       super(block.CBE.get(),pos ,state);
+    public centerBlockEntity(BlockPos pos , BlockState state){
+
+        super(block.CBE.get(),pos ,state);
    }
+
+    public static void sava_all_NPC(String name, UUID uuid ,Player player){
+        List<CompoundTag> all_NPC = new ArrayList<>(player.getData(ALL_NPC));
+        CompoundTag npc = new CompoundTag();
+        npc.putString("name",name);
+        npc.putUUID("uuid_name",uuid);
+        all_NPC.add(npc);
+        player.setData(ALL_NPC,all_NPC);
+    }
+    public static List<String> get_all_NPC_name(Player player){
+        List<String> npc_list=new ArrayList<>();
+        for(CompoundTag a : player.getData(ALL_NPC) ){
+            npc_list.add(a.getString("name"));
+        }
+        return npc_list;
+
+    }
+    public static UUID get_all_NPC_uuid(Player player ,String npc_name){
+        if (!player.getData(ALL_NPC).isEmpty()){
+            for(CompoundTag a : player.getData(ALL_NPC) ){
+                if(a.getString("name").equals(npc_name)){
+                    return a.getUUID("uuid_name");
+                }
+            }
+        }
+        return null;
+    }
+
+
+    public void set_all_NPC(){
+        this.setChanged();
+    }
+
    @Override
    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
        super.saveAdditional(tag, registries);
@@ -46,6 +83,7 @@ public class centerBlockEntity extends BlockEntity {
        tag.putInt("now_max_resident",this.now_max_resident);
        tag.putInt("NPC_count",this.NPC_count);
        tag.putInt("resident_building_count",this.resident_building_count);
+
    }
 
     @Override
@@ -55,12 +93,12 @@ public class centerBlockEntity extends BlockEntity {
         if (tag.hasUUID("UUID")) {
             this.player_UUID = tag.getUUID("UUID"); // 读出来
         }
-
         this.town_name=tag.getString("name");
         this.now_resident=tag.getInt("now_resident");
         this.now_max_resident=tag.getInt("now_max_resident");
         this.resident_building_count=tag.getInt("resident_building_count");
         this.NPC_count=tag.getInt("NPC_count");
+
     }
 
     public void add_NPC_count(int count){
@@ -74,6 +112,9 @@ public class centerBlockEntity extends BlockEntity {
      */
     public void shengji(Player player){
         int jing_ji=player.getData(SimulationTown.PLAYER_JINGJI);
+        if(this.level==1){
+            max_resident=init_resident;
+        }
 
        if(this.level ==1 &&hasItem(player,Items.IRON_INGOT,64)){
            if (jing_ji >=10){
@@ -138,14 +179,17 @@ public class centerBlockEntity extends BlockEntity {
 
 
     }
-    public void qingli(Player player ){
+    public String qingli(Player player ){
         BlockPos a = player.getExistingDataOrNull(SimulationTown.TOWN_CENTER);
-        if (a!=null){
+        if (a!=null && hasItem(player,Items.NETHER_STAR,1)){
+            xiaohao(player,Items.NETHER_STAR,1);
             player.removeData(TOWN_CENTER);
             player.removeData(TOWN_CENTER_NAME);
             player.removeData(TOWN_GDP);
             player.removeData(PLAYER_JINGJI);
+            return "已放弃小镇";
         }
+        return "你没有下界之星，无法放弃小镇";
 
     }
     public void save_town_name(Player player,String n1){
@@ -170,13 +214,15 @@ public class centerBlockEntity extends BlockEntity {
        this.now_resident=nr;
        this.setChanged();
     }
-    public boolean name(){
-        if(this.town_name.isEmpty()){
-            return false;
-        }else{
-            return true;
-        }
+    public boolean name() {
+        if (this.town_name != null) {
+            if (this.town_name.isEmpty()) {
+                return false;
+            } else {
+                return true;
+            }
 
         }
-
+        return false;
+    }
 }

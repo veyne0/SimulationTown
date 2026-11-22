@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "PPP",
+    "PSP",
+    "PPP"
+  ],
+  "key": {
+    "P": { "item": "minecraft:oak_planks" },
+    "S": { "item": "minecraft:stone_pickaxe" }
+  },
+  "result": {
+    "id": "simulation_town:build_block",
+    "count": 1
+  }
+}

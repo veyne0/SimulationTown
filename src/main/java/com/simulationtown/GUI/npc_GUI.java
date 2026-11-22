@@ -8,6 +8,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.style.StylesheetManager;
+import com.buildlib.api.NpcBuildApi;
 import com.simulationtown.NPC.NPC;
 import com.simulationtown.SimulationTown;
 import dev.vfyjxf.taffy.style.FlexDirection;
@@ -17,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -86,7 +88,7 @@ public class npc_GUI {
         UIElement root = new UIElement();
         root.addClass("panel_bg");
         root.layout(l -> l.flexDirection(FlexDirection.COLUMN)
-                .width(248).height(132).paddingAll(8).gapAll(4));
+                .width(248).height(156).paddingAll(8).gapAll(4));
 
         // 标题：NPC 的名字
         Label title = new Label();
@@ -115,6 +117,32 @@ public class npc_GUI {
         skin.bind(DataBindingBuilder.componentS2C(
                 () -> Component.literal("皮肤：" + (npc == null ? "-" : "#" + npc.getSkinIndex()))).build());
         root.addChild(skin);
+
+        // 建造任务（buildlib 的 NpcBuildApi；没有进行中任务时 progress 返回 -1）
+        Label build = new Label();
+        build.layout(l -> l.height(11));
+        build.bind(DataBindingBuilder.componentS2C(() -> {
+            if (npc == null) return Component.literal("建造：-");
+            String bid = NpcBuildApi.buildingId(npc);
+            if (bid == null) return Component.literal("建造：空闲");
+            double p = NpcBuildApi.progress(npc);
+            return Component.literal("建造：" + building_ui.shortName(bid) + "（" + Math.round(p * 100) + "%）");
+        }).build());
+        root.addChild(build);
+
+        // 施工/停工状态：缺料时显示缺的是什么
+        Label buildState = new Label();
+        buildState.layout(l -> l.height(11));
+        buildState.bind(DataBindingBuilder.componentS2C(() -> {
+            if (npc == null || NpcBuildApi.buildingId(npc) == null) return Component.literal("");
+            if (NpcBuildApi.isStuck(npc)) {
+                Item miss = NpcBuildApi.missingItem(npc);
+                String missName = miss == null ? "?" : new ItemStack(miss).getHoverName().getString();
+                return Component.literal("⚠ 缺料停工：" + missName);
+            }
+            return Component.literal("施工中");
+        }).build());
+        root.addChild(buildState);
 
         // 按钮行：打开背包 / 关闭
         UIElement row = new UIElement();

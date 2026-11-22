@@ -93,6 +93,11 @@ public final class centerblock_GUI {
             if (center.getUUID() == null) {
                 center.bangding(sp);                                   // 兜底：还没绑定镇长
             }
+            // buildlib 人口系统：命名门槛解除。首次命名会补发 2 个初始 NPC
+            // （放镇中心时没命名 → PopulationManager 当时不发，等这里解除门槛）
+            if (sp.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                com.buildlib.population.PopulationManager.markTownInitialized(sl, holder.pos);
+            }
             sp.displayClientMessage(Component.literal("小镇「" + name + "」建立成功"), true);
         });
 
@@ -186,14 +191,16 @@ public final class centerblock_GUI {
         Button btnAbandon = new Button();
         btnAbandon.setText("放弃小镇");
         btnAbandon.layout(l -> l.widthPercent(100).height(20));
-        // 服务端回调：调用 qingli 解绑，然后关界面、删方块
+        // 服务端回调：qingli 返回结果消息 —— 成功才关界面、删方块；没下界之星就只提示
         btnAbandon.setOnServerClick(e -> {
             if (center == null) return;
             ServerPlayer sp = (ServerPlayer) holder.player;
-            center.qingli(sp);
-            sp.closeContainer();                       // 界面正盯着这个方块，先关掉
-            sp.level().removeBlock(holder.pos, false); // 再删方块，不掉落物品
-            sp.displayClientMessage(Component.literal("小镇已放弃，可以在别处重建"), true);
+            String msg = center.qingli(sp);
+            if ("已放弃小镇".equals(msg)) {
+                sp.closeContainer();                       // 界面正盯着这个方块，先关掉
+                sp.level().removeBlock(holder.pos, false); // 再删方块，不掉落物品
+            }
+            sp.displayClientMessage(Component.literal(msg), true);
         });
 
         sidebar.addChildren(btnOverview, btnResidents, btnBuildings, btnUpgrade, btnAbandon);
