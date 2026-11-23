@@ -3,7 +3,6 @@ package com.simulationtown.building;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
-/** 所有"建筑本体"方块实体的公共读取接口，UI 只认这个，不关心是哪个分类。 */
 public interface BuildingData {
     String getEmployNpc();
     String getBuilderName();

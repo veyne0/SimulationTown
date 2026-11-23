@@ -20,8 +20,8 @@ import static com.simulationtown.towncenter.consume.hasItem;
 import static com.simulationtown.towncenter.consume.xiaohao;
 
 public class centerBlockEntity extends BlockEntity {
-    public int init_resident = 2;
-    public int max_resident=100;
+    public static int init_resident = 2;
+    public static int max_resident=100;
     public int now_max_resident;
     public int now_resident;
     private UUID player_UUID;
@@ -66,6 +66,7 @@ public class centerBlockEntity extends BlockEntity {
 
 
     public void set_all_NPC(){
+
         this.setChanged();
     }
 
@@ -102,26 +103,25 @@ public class centerBlockEntity extends BlockEntity {
     }
 
     public void add_NPC_count(int count){
-       this.NPC_count+=count;
+
+        this.NPC_count+=count;
     }
     public void add_resident_building_count(){
-       this.resident_building_count+=1;
+
+        this.resident_building_count+=1;
     }
     /*
     升级镇中心用的
      */
     public void shengji(Player player){
-        int jing_ji=player.getData(SimulationTown.PLAYER_JINGJI);
-        if(this.level==1){
-            max_resident=init_resident;
-        }
+        double jing_ji=player.getData(SimulationTown.PLAYER_JINGJI);
 
        if(this.level ==1 &&hasItem(player,Items.IRON_INGOT,64)){
            if (jing_ji >=10){
                xiaohao(player, Items.IRON_INGOT,64);
                this.level +=1;
                this.now_max_resident=10;
-               player.setData(SimulationTown.PLAYER_JINGJI,jing_ji-10);
+               player.setData(SimulationTown.PLAYER_JINGJI,jing_ji-10.0);
                this.setChanged();
            }
 
@@ -132,7 +132,7 @@ public class centerBlockEntity extends BlockEntity {
                 xiaohao(player, Items.GOLD_INGOT, 64);
                 this.level += 1;
                 this.now_max_resident=30;
-                player.setData(SimulationTown.PLAYER_JINGJI, jing_ji - 500);
+                player.setData(SimulationTown.PLAYER_JINGJI, jing_ji - 500.0);
                 this.setChanged();
             }
         }
@@ -141,7 +141,7 @@ public class centerBlockEntity extends BlockEntity {
                 xiaohao(player, Items.DIAMOND, 64);
                 this.level += 1;
                 this.now_max_resident=70;
-                player.setData(SimulationTown.PLAYER_JINGJI, jing_ji - 5000);
+                player.setData(SimulationTown.PLAYER_JINGJI, jing_ji - 5000.0);
                 this.setChanged();
             }
 
@@ -153,7 +153,7 @@ public class centerBlockEntity extends BlockEntity {
                 xiaohao(player, Items.NETHER_STAR, 1);
                 this.level += 1;
                 this.now_max_resident=100;
-                player.setData(SimulationTown.PLAYER_JINGJI, jing_ji -20000);
+                player.setData(SimulationTown.PLAYER_JINGJI, jing_ji -20000.0);
                 this.setChanged();
             }
         }
@@ -224,5 +224,19 @@ public class centerBlockEntity extends BlockEntity {
 
         }
         return false;
+    }
+    /*给启动资金的*/
+    public String add_jingji(Player player){
+        double p = player.getData(PLAYER_JINGJI);
+        if (this.level==1){
+            player.setData(PLAYER_JINGJI,p+10.0);
+            return "已给你10块小镇启动资金";
+        }
+        return "";
+    }
+    /*给buildlib调用的*/
+    public void add_jinji(Player player ,double jinji){
+        double p1= player.getData(PLAYER_JINGJI);
+        player.setData(PLAYER_JINGJI,p1+jinji);
     }
 }

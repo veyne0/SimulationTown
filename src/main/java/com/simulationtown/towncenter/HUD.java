@@ -35,14 +35,16 @@ public class HUD {
                     if (mc.player == null) return;
                     // 附件已 sync, 客户端读到的就是服务端写的真值
                     double gdp   = mc.player.getData(SimulationTown.TOWN_GDP);
-                    int    money = mc.player.getData(SimulationTown.PLAYER_JINGJI);
+                    double   money = mc.player.getData(SimulationTown.PLAYER_JINGJI);
                     String name=mc.player.getData(SimulationTown.TOWN_CENTER_NAME);
                     if(name !=null ){
                         if(!name.isEmpty()){
                             guiGraphics.drawString(Minecraft.getInstance().font,
-                                    "小镇GDP " + String.format("%.2f", gdp), 10, 10, 0xFFFFFF, true);
+                                    "小镇GDP " + String.format("%.2f", gdp), 2, 10, 0xFFFFFF, true);
                             guiGraphics.drawString(Minecraft.getInstance().font,
-                                    "玩家资金 " + money, 10, 20, 0xFFFFFF, true);
+                                    "你的资金 " + (money == Math.floor(money)
+                                            ? String.valueOf((long) money)
+                                            : String.format("%.2f", money)), 2, 20, 0xFFFFFF, true);
 
                         }
 
@@ -62,7 +64,9 @@ public class HUD {
             if (++timer < 20) return;              // 每秒一次
             timer = 0;
             for (ServerPlayer p : e.getServer().getPlayerList().getPlayers()) {
-                p.setData(SimulationTown.TOWN_GDP,GdpManager.queryCumulativeGdp(p.serverLevel()));
+                // 多人各建各的镇: 按玩家 TOWN_CENTER 查他自己那个镇的累计产值, 而不是全维度混总
+                p.setData(SimulationTown.TOWN_GDP,
+                    GdpManager.queryTownCumulative(p.serverLevel(), p.getData(SimulationTown.TOWN_CENTER)));
             }
         }
     }

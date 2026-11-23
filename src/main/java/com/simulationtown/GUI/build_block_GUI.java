@@ -53,11 +53,8 @@ public final class build_block_GUI {
     // 每页几张卡片。控件树两端必须一样，所以槽位数是写死的，只是每张卡显示的文字会变
     private static final int PAGE_SIZE = 4;
 
-    // 一张卡的高度（padding 3×2 + 名字 12 + 信息 10 = 28，再留 2 余量，防止溢出边框）
-    private static final float CARD_H = 30;
-
-    /** 列表里的一行：名字 + 尺寸 + 方块数。 */
-    private record Entry(String category, String name, String path, String size, int blocks) {
+    /** 列表里的一行：名字 + 尺寸 + 方块数 + 价格（json 的 cost，0 = 免费；资金 double 支持小数）。 */
+    private record Entry(String category, String name, String path, String size, int blocks, double cost) {
     }
 
     /** 从 nbt 里解析出来的信息（按文件修改时间缓存，文件不变就不重复解析）。 */
@@ -84,14 +81,16 @@ public final class build_block_GUI {
         return entries;
     }
 
-    /** 真正读盘：扫目录 + 给每个文件补尺寸/方块数。2 秒最多跑一次。 */
+    /** 真正读盘：扫目录 + 给每个文件补尺寸/方块数/价格。2 秒最多跑一次。 */
     private static void rebuild() {
         List<Entry> out = new ArrayList<>();
         for (BuildingInfo bi : BuildingScanner.scanAll(ROOT_DIR, CATEGORIES)) {
             Path p = BuildingScanner.resolveNbtPath(ROOT_DIR, bi);
             if (p == null) continue;
             Meta meta = metaOf(p);
-            out.add(new Entry(bi.category(), bi.name(), p.toString(), meta.size(), meta.blocks()));
+            // 价格在伴生 json（"cost" 字段），没有 = 0 免费。json 小，rebuild 本身有 2 秒缓存
+            double cost = com.buildlib.api.NpcBuildApi.costFor(bi.category() + "/" + bi.name());
+            out.add(new Entry(bi.category(), bi.name(), p.toString(), meta.size(), meta.blocks(), cost));
         }
         entries = out;
     }
@@ -178,7 +177,14 @@ public final class build_block_GUI {
 
     private static String metaText(String cat, int page, int i) {
         Entry e = at(cat, page * PAGE_SIZE + i);
-        return e == null ? "" : e.size() + "   " + e.blocks() + " 方块";
+        return e == null ? "" : e.size() + " · " + e.blocks() + " 方块";
+    }
+
+    private static String priceText(String cat, int page, int i) {
+        Entry e = at(cat, page * PAGE_SIZE + i);
+        if (e == null) return "";
+        return e.cost() > 0 ? "价格：" + (e.cost() == Math.floor(e.cost())
+                ? String.valueOf((long) e.cost()) : String.format("%.2f", e.cost())) : "价格：免费";
     }
 
     // ---------------- 界面 ----------------
@@ -194,15 +200,15 @@ public final class build_block_GUI {
         root.layout(l -> l.flexDirection(FlexDirection.ROW).width(320).height(196).paddingAll(6).gapAll(8));
         root.addClass("panel_bg");
 
-        // ---------- 左：四个分类 + 刷新 + 导入 ----------
+        // ---------- 左：四个分类 + 刷新 + 导入（窄栏，把宽度让给卡片）----------
         UIElement sidebar = new UIElement();
-        sidebar.layout(l -> l.flexDirection(FlexDirection.COLUMN).width(76).heightPercent(100).gapAll(4));
+        sidebar.layout(l -> l.flexDirection(FlexDirection.COLUMN).width(56).heightPercent(100).gapAll(3));
 
         for (int i = 0; i < CATEGORIES.length; i++) {
             final String cat = CATEGORIES[i];
             Button btn = new Button();
             btn.setText(CATEGORY_NAMES[i]);
-            btn.layout(l -> l.widthPercent(100).height(18));
+            btn.layout(l -> l.widthPercent(100).height(15));
             btn.setOnServerClick(e -> {
                 selected[0] = cat;
                 page[0] = 0;        // 换分类回到第一页
@@ -212,7 +218,7 @@ public final class build_block_GUI {
 
         Button btnRefresh = new Button();
         btnRefresh.setText("刷新");
-        btnRefresh.layout(l -> l.widthPercent(100).height(18));
+        btnRefresh.layout(l -> l.widthPercent(100).height(15));
         btnRefresh.setOnServerClick(e -> cacheAt = 0L); // 让下一次扫描重新读盘
         sidebar.addChild(btnRefresh);
 
@@ -220,7 +226,7 @@ public final class build_block_GUI {
         // 用 setOnClick（客户端）而不是 setOnServerClick —— Swing 文件选择框只在客户端有。
         Button btnImport = new Button();
         btnImport.setText("导入");
-        btnImport.layout(l -> l.widthPercent(100).height(18));
+        btnImport.layout(l -> l.widthPercent(100).height(15));
         btnImport.setOnClick(e -> new build_import().daoru());
         sidebar.addChild(btnImport);
 
@@ -245,22 +251,22 @@ public final class build_block_GUI {
         catLabel.setVisible(false);
         content.addChild(catLabel);
 
-        // 卡片网格：2×2，每行两张平分宽度
+        // 卡片网格：2×2。行用 flexGrow 平分剩余高度 → 卡片自动铺满右侧，下面不再留空
         UIElement cards = new UIElement();
-        cards.layout(l -> l.flexDirection(FlexDirection.COLUMN).widthPercent(100).gapAll(3));
+        cards.layout(l -> l.flexDirection(FlexDirection.COLUMN).widthPercent(100).flexGrow(1).gapAll(3));
         content.addChild(cards);
 
         for (int row = 0; row < PAGE_SIZE / 2; row++) {
             UIElement rowEl = new UIElement();
-            rowEl.layout(l -> l.flexDirection(FlexDirection.ROW).widthPercent(100).height(CARD_H).gapAll(3));
+            rowEl.layout(l -> l.flexDirection(FlexDirection.ROW).widthPercent(100).flexGrow(1).gapAll(3));
             cards.addChild(rowEl);
 
             for (int col = 0; col < 2; col++) {
                 final int slot = row * 2 + col;
 
                 UIElement card = new UIElement();
-                card.layout(l -> l.flexDirection(FlexDirection.COLUMN).flexGrow(1).height(CARD_H)
-                        .paddingAll(3).gapAll(0));
+                card.layout(l -> l.flexDirection(FlexDirection.COLUMN).flexGrow(1).heightPercent(100)
+                        .paddingAll(4).gapAll(3));
                 card.addClass("panel_bg");
 
                 Label cardName = new Label();
@@ -273,6 +279,11 @@ public final class build_block_GUI {
                 cardMeta.bind(DataBindingBuilder.componentS2C(
                         () -> Component.literal(metaText(selected[0], page[0], slot))).build());
 
+                Label cardPrice = new Label();
+                cardPrice.layout(l -> l.height(10));
+                cardPrice.bind(DataBindingBuilder.componentS2C(
+                        () -> Component.literal(priceText(selected[0], page[0], slot))).build());
+
                 // 这一页没这么多建筑时把整张卡藏起来。
                 // SimpleBinding.registerListener 在第一次同步时不触发，所以用 onRemoteSyncReceived：
                 // 它就是在「收到对面推来的值」时调用，包括第一次。
@@ -283,7 +294,7 @@ public final class build_block_GUI {
                         .onRemoteSyncReceived(c -> card.setVisible("1".equals(c.getString())))
                         .build());
 
-                card.addChildren(visLabel, cardName, cardMeta);
+                card.addChildren(visLabel, cardName, cardMeta, cardPrice);
 
                 // 点这一张 → 打开 buildlib 的幽灵方块预览（客户端事件，openPreview 是纯客户端 API）
                 card.addEventListener(UIEvents.CLICK, e -> {

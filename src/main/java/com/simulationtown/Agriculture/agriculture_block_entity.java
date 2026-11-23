@@ -17,16 +17,13 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
     public int a_GDP;
     public int a_block_count;
     public UUID a_builder_UUID;
+
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int a_rotation_steps = 0;
 
-    /*雇佣的 NPC的名字 */
     public String employ_npc = "";
-    /*建造这个建筑的 NPC 名字 */
     public String builder_name = "";
-    /*是否建造完成 */
     public boolean i_build_state = false;
-    /*完成度 0.0 ~ 1.0 */
     public double i_Completion_level = 0.0;
 
     public agriculture_block_entity(BlockPos pos, BlockState state) {

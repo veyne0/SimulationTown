@@ -11,22 +11,19 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.UUID;
 
-public class industry_block_entity extends BlockEntity  {
+public class industry_block_entity extends BlockEntity implements  BuildingData {
     public String i_building_id = "";
     int[] i_building_box ;
     public int i_GDP;
     public int i_block_count;
     public UUID i_builder_UUID;
+
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int i_rotation_steps = 0;
 
-    /** 雇佣的 NPC 名字 */
     public String employ_npc = "";
-    /** 建造这个建筑的 NPC 名字 */
     public String builder_name = "";
-    /** 是否建造完成 */
     public boolean i_build_state = false;
-    /** 完成度 0.0 ~ 1.0 */
     public double i_Completion_level = 0.0;
 
 
@@ -164,4 +161,24 @@ public class industry_block_entity extends BlockEntity  {
         this.i_build_state = finished;
         this.setChanged();
     }
+
+
+
+
+    @Override
+    public int getRotationSteps() {
+        return this.i_rotation_steps;
+    }
+
+    @Override
+    public void setRotationSteps(int steps) {
+        this.i_rotation_steps = ((steps % 4) + 4) % 4;
+        this.setChanged();
+    }
+
+    @Override
+    public BlockPos getBindPos() {
+        return this.getBlockPos();
+    }
 }
+

@@ -17,22 +17,22 @@ public class NPC_spawn {
             if(!centerBlockEntity.get_all_NPC_name( player).isEmpty() &&centerBlockEntity.get_all_NPC_name( player).contains(n_name) ){
                 String n1_name=NPC_name.randomName();
                 npc.setCustomName(Component.literal(n1_name));
-                npc.setCustomNameVisible(true);// 头顶常驻显示
+                npc.setCustomNameVisible(true);
                 npc.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
                         level.getRandom().nextFloat() * 360f, 0);
                 level.addFreshEntity(npc);
-                npc.skinIndex = ThreadLocalRandom.current().nextInt(NPC_render.skincount);
+                npc.setSkinIndex(ThreadLocalRandom.current().nextInt(NPC_render.skincount));
                 UUID n_uuid=npc.getUUID();
                 centerBlockEntity.sava_all_NPC(n1_name,n_uuid,player);
                 return npc;
 
             }else{
                 npc.setCustomName(Component.literal(n_name));
-                npc.setCustomNameVisible(true);// 头顶常驻显示
+                npc.setCustomNameVisible(true);
                 npc.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
                         level.getRandom().nextFloat() * 360f, 0);
                 level.addFreshEntity(npc);
-                npc.skinIndex = ThreadLocalRandom.current().nextInt(NPC_render.skincount);
+                npc.setSkinIndex(ThreadLocalRandom.current().nextInt(NPC_render.skincount));
                 UUID n_uuid=npc.getUUID();
                 centerBlockEntity.sava_all_NPC(n_name,n_uuid,player);
                 return npc;

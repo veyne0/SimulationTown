@@ -15,6 +15,7 @@ public class special_block_entity extends BlockEntity implements BuildingData {
     public String s_building_id = "";
     int[] s_building_box ;
     public UUID s_builder_UUID;
+
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int s_rotation_steps = 0;
 
@@ -40,7 +41,10 @@ public class special_block_entity extends BlockEntity implements BuildingData {
         if (this.s_building_id!=null){
             tag.putString("s_building_id",this.s_building_id);
         }
-        tag.putUUID("s_builder_UUID",this.s_builder_UUID);
+        if (this.s_builder_UUID !=null){
+            tag.putUUID("s_builder_UUID",this.s_builder_UUID);
+        }
+
     }
 
     @Override

@@ -93,10 +93,18 @@ public final class centerblock_GUI {
             if (center.getUUID() == null) {
                 center.bangding(sp);                                   // 兜底：还没绑定镇长
             }
-            // buildlib 人口系统：命名门槛解除。首次命名会补发 2 个初始 NPC
+            // buildlib 人口系统：命名门槛解除。首次命名会补发初始 NPC
             // （放镇中心时没命名 → PopulationManager 当时不发，等这里解除门槛）
             if (sp.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                // 首次命名（初始化标记还没打上）才发启动资金，改名重复点不会重复发
+                boolean firstTime = !com.buildlib.population.PopulationManager.isInitialized(sl, holder.pos);
                 com.buildlib.population.PopulationManager.markTownInitialized(sl, holder.pos);
+                if (firstTime) {
+                    String msg = center.add_jingji(sp);
+                    if (!msg.isEmpty()) {
+                        sp.displayClientMessage(Component.literal(msg), true);
+                    }
+                }
             }
             sp.displayClientMessage(Component.literal("小镇「" + name + "」建立成功"), true);
         });
@@ -192,11 +200,17 @@ public final class centerblock_GUI {
         btnAbandon.setText("放弃小镇");
         btnAbandon.layout(l -> l.widthPercent(100).height(20));
         // 服务端回调：qingli 返回结果消息 —— 成功才关界面、删方块；没下界之星就只提示
+        // 注意：玩家 removeData 只能清玩家附件；GDP 登记/人口去重记录在维度 SavedData 里，
+        // 必须额外调 buildlib 的 clearTown，否则同位置重建会出现"旧建筑还在算 GDP/新镇不补 NPC"
         btnAbandon.setOnServerClick(e -> {
             if (center == null) return;
             ServerPlayer sp = (ServerPlayer) holder.player;
             String msg = center.qingli(sp);
             if ("已放弃小镇".equals(msg)) {
+                if (sp.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+                    com.buildlib.economy.GdpManager.clearTown(sl, holder.pos);
+                    com.buildlib.population.PopulationManager.clearTown(sl, holder.pos);
+                }
                 sp.closeContainer();                       // 界面正盯着这个方块，先关掉
                 sp.level().removeBlock(holder.pos, false); // 再删方块，不掉落物品
             }
@@ -288,14 +302,16 @@ public final class centerblock_GUI {
         }
 
         int haveItem = countItem(p, need);
-        int haveJingji = p.getData(SimulationTown.PLAYER_JINGJI);
+        double haveJingji = p.getData(SimulationTown.PLAYER_JINGJI);
+        String jingjiText = haveJingji == Math.floor(haveJingji)
+                ? String.valueOf((long) haveJingji) : String.format("%.2f", haveJingji);
 
         String itemName = need.getDescription().getString();
         return "升级到 " + (lv + 1) + " 级需要："
                 + "\n" + (haveItem >= needCount ? "✔" : "✘") + " " + itemName
                 + " " + haveItem + " / " + needCount
                 + "\n" + (haveJingji >= needJingji ? "✔" : "✘") + " 经济 "
-                + haveJingji + " / " + needJingji;
+                + jingjiText + " / " + needJingji;
     }
 
     /** 数玩家背包里某种物品的总数。 */

@@ -57,6 +57,11 @@ public class npc_GUI {
         if (player.isSpectator() || !(player instanceof ServerPlayer sp)) {
             return InteractionResult.PASS;
         }
+        // 商店职业的 NPC: 直接进商店界面 (进不去再回落到 NPC 信息界面)
+        if ("SHOPER".equals(npc.job) && shop_gui.open(sp, npc)) {
+            sp.setData(SimulationTown.NPC_TALKING, npc.getUUID());
+            return InteractionResult.SUCCESS;
+        }
         // 先记下"我在跟谁说话"，再开界面（附件会同步到客户端）
         sp.setData(SimulationTown.NPC_TALKING, npc.getUUID());
         PlayerUIMenuType.openUI(sp, UI_ID);
@@ -136,9 +141,13 @@ public class npc_GUI {
         buildState.bind(DataBindingBuilder.componentS2C(() -> {
             if (npc == null || NpcBuildApi.buildingId(npc) == null) return Component.literal("");
             if (NpcBuildApi.isStuck(npc)) {
-                Item miss = NpcBuildApi.missingItem(npc);
-                String missName = miss == null ? "?" : new ItemStack(miss).getHoverName().getString();
-                return Component.literal("⚠ 缺料停工：" + missName);
+                // 可互换类显示 "木板"; 精确物品显示物品名
+                String label = NpcBuildApi.missingLabel(npc);
+                if (label == null) {
+                    Item miss = NpcBuildApi.missingItem(npc);
+                    label = miss == null ? "?" : new ItemStack(miss).getHoverName().getString();
+                }
+                return Component.literal("⚠ 缺料停工：" + label);
             }
             return Component.literal("施工中");
         }).build());
@@ -158,6 +167,25 @@ public class npc_GUI {
             }
         });
         row.addChild(openBag);
+
+        // 建造职业 (job 里带 builder) 才有: 查看他到完工还缺什么材料
+        // job 必须读 getJobSynced (watcher 同步): 这个判断在客户端构建界面时也执行,
+        // 裸字段客户端拿不到 → 两边结构不一致, 按钮就显示不出来
+        boolean isBuilder = npc != null && npc.getJobSynced().toLowerCase().contains("builder");
+        if (isBuilder) {
+            Button materials = new Button();
+            materials.setText("建筑材料");
+            materials.layout(l -> l.width(64).height(18));
+            materials.setOnServerClick(e -> {
+                if (player instanceof ServerPlayer sp) {
+                    if (!build_material_gui.open(sp, npc)) {
+                        sp.sendSystemMessage(Component.literal(
+                                "这个 NPC 没有进行中的建造").withStyle(net.minecraft.ChatFormatting.RED));
+                    }
+                }
+            });
+            row.addChild(materials);
+        }
 
         Button close = new Button();
         close.setText("关闭");
