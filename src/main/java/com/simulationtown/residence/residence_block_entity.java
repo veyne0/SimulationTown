@@ -17,6 +17,8 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
     public int r_GDP;
     public int r_block_count;
     public UUID r_builder_UUID;
+    public BlockPos r_pos;
+    public String resident_name;
 
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int r_rotation_steps = 0;
@@ -49,6 +51,12 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         if(r_builder_UUID!=null){
             tag.putUUID("r_builder_UUID",this.r_builder_UUID);
         }
+        if(r_pos !=null ){
+            tag.putLong("r_pos",r_pos.asLong());
+        }
+        if(this.resident_name !=null){
+            tag.putString("resident_name",this.resident_name);
+        }
 
     }
 
@@ -66,6 +74,12 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         this.r_rotation_steps=tag.getInt("r_rotation_steps");
         if(tag.hasUUID("r_builder_UUID")){
             this.r_builder_UUID=tag.getUUID("r_builder_UUID");
+        }
+        if(tag.contains("r_pos")){
+            this.r_pos=BlockPos.of(tag.getLong("r_pos"));
+        }
+        if(tag.contains("resident_name")){
+            this.resident_name=tag.getString("resident_name");
         }
 
     }
@@ -178,6 +192,22 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
 
     @Override
     public BlockPos getBindPos() {
-        return this.getBlockPos();
+        this.r_pos=this.getBlockPos();
+        return  r_pos;
     }
+    public String get_resident_name(){
+        if(this.resident_name !=null && !this.resident_name.isEmpty()){
+            return this.resident_name;
+        }
+        return "";
+    }
+    public void set_resident_name(String n){
+        if(!n.isEmpty()){
+            this.resident_name=n;
+        }
+    }
+    public void qingli_resident_name(){
+        this.resident_name="";
+    }
+
 }
