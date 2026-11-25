@@ -1,0 +1,2 @@
+本模组开发中使用了AI辅助（主要是GUI，buildlib部分）
+buildlib是一个类似于结构化的模组
