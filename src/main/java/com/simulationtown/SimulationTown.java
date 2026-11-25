@@ -92,7 +92,7 @@ public class SimulationTown {
 
     public static final Supplier<AttachmentType<BlockPos>> TOWN_CENTER =
             ATTACHMENT_TYPES.register("town_center", () ->
-                    AttachmentType.builder(() -> (BlockPos)null) // 默认坐标0,0,0
+                    AttachmentType.builder(() -> (BlockPos)null)
                             .serialize(BlockPos.CODEC) // 用原版的序列化
                             .copyOnDeath()
                             .build());

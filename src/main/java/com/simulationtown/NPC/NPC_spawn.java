@@ -22,6 +22,7 @@ public class NPC_spawn {
                         level.getRandom().nextFloat() * 360f, 0);
                 level.addFreshEntity(npc);
                 npc.setSkinIndex(ThreadLocalRandom.current().nextInt(NPC_render.skincount));
+                npc.setPersistenceRequired();
                 UUID n_uuid=npc.getUUID();
                 centerBlockEntity.sava_all_NPC(n1_name,n_uuid,player);
                 return npc;
@@ -33,6 +34,7 @@ public class NPC_spawn {
                         level.getRandom().nextFloat() * 360f, 0);
                 level.addFreshEntity(npc);
                 npc.setSkinIndex(ThreadLocalRandom.current().nextInt(NPC_render.skincount));
+                npc.setPersistenceRequired();
                 UUID n_uuid=npc.getUUID();
                 centerBlockEntity.sava_all_NPC(n_name,n_uuid,player);
                 return npc;

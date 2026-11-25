@@ -1,14 +1,18 @@
 package com.simulationtown.NPC;
 
+import com.simulationtown.AI.go_home_goal;
+import com.simulationtown.AI.kanshu_goal;
+import com.simulationtown.AI.pick_thing;
 import com.simulationtown.GUI.npc_GUI;
-import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.geom.ModelLayers;
-import net.minecraft.client.renderer.entity.HumanoidMobRenderer;
+
+import com.simulationtown.residence.residence_block_entity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.*;
 import net.minecraft.world.entity.EntityType;
@@ -16,39 +20,49 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
-import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
+
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.minecraft.world.level.block.entity.BlockEntity;
+
+import static com.simulationtown.SimulationTown.TOWN_CENTER;
+
 
 public class NPC extends PathfinderMob {
     public  SimpleContainer inventory = new SimpleContainer(27);
     public String job;
-    /** SHOPER 专用: 所属商店建筑的 buildingId (如 "special/杂货铺"), 商品从这里读; 非商店为 null  注：此字段是AI加的*/
+    public String npc_state;
+    /** SHOPER 专用: 所属商店建筑的 buildingId (如 "special/杂货铺"), 商品从这里读; 非商店为 null  */
     public String shopBuildingId;
     public int skinIndex = (int)(Math.random()*10);
+    public BlockPos NPC_home;
 
 
     public NPC(EntityType<? extends PathfinderMob> type, Level level) {
 
         super(type, level);
+        this.setCanPickUpLoot(true);
+
     }
     private static final EntityDataAccessor<Integer> DATA_SKIN =
             SynchedEntityData.defineId(NPC.class, EntityDataSerializers.INT);
+
     /** job 同步到客户端 (npc_GUI 靠它决定"建造材料"按钮出不出来, 结构两边必须一致) */
     private static final EntityDataAccessor<String> DATA_JOB =
             SynchedEntityData.defineId(NPC.class, EntityDataSerializers.STRING);
 
+    public static  final EntityDataAccessor<String> NPC_STATE=SynchedEntityData.defineId(NPC.class,EntityDataSerializers.STRING);
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
-        builder.define(DATA_SKIN, 0);   // 默认第 0 套皮肤; 真值由 spawn/读档写入
-        builder.define(DATA_JOB, "");   // 默认无职业; 真值由 set_job/读档写入
+        builder.define(DATA_SKIN, 0);
+        builder.define(DATA_JOB, "");
+        builder.define(NPC_STATE,"");
     }
 
     /** 设置皮肤并同步到客户端 (普通字段客户端拿不到, 必须走 entityData) */
@@ -62,15 +76,16 @@ public class NPC extends PathfinderMob {
     public static AttributeSupplier.Builder createAttributes() {
         return PathfinderMob.createMobAttributes()
                 .add(Attributes.MAX_HEALTH, 30.0)
-                .add(Attributes.MOVEMENT_SPEED, 0.5)
+                .add(Attributes.MOVEMENT_SPEED, 0.4)
                 .add(Attributes.FOLLOW_RANGE, 32.0);
     }
     @Override
-    protected void registerGoals() {
-
+    public void registerGoals() {
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        this.goalSelector.addGoal(1, new LookAtPlayerGoal(this, Player.class, 8f));
-        this.goalSelector.addGoal(2, new RandomLookAroundGoal(this));
+        this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
+        this.goalSelector.addGoal(2,new pick_thing(this));
+        this.goalSelector.addGoal(1,new kanshu_goal(this));
+        this.goalSelector.addGoal(0, new go_home_goal(this));
     }
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
@@ -83,6 +98,12 @@ public class NPC extends PathfinderMob {
             tag.putString("shopid",this.shopBuildingId);
         }
         tag.putInt("skinindex",this.skinIndex);
+        if(this.npc_state !=null){
+            tag.putString("npc_state",this.npc_state);
+        }
+        if(this.NPC_home!=null){
+            tag.putLong("NPC_home",this.NPC_home.asLong());
+        }
 
     }
 
@@ -98,6 +119,13 @@ public class NPC extends PathfinderMob {
         this.skinIndex=tag.getInt("skinindex");
         this.entityData.set(DATA_SKIN, this.skinIndex);   // 读档也要进 watcher, 客户端才知道
         this.entityData.set(DATA_JOB, this.job == null ? "" : this.job);
+        if(this.npc_state !=null){
+            this.entityData.set(NPC_STATE,this.npc_state);
+        }
+        if(tag.contains("NPC_home")){
+            this.NPC_home=BlockPos.of(tag.getLong("NPC_home"));
+
+        }
     }
 
     public int getSkinIndex() {
@@ -108,6 +136,11 @@ public class NPC extends PathfinderMob {
     public String getJobSynced() {
         String j = this.entityData.get(DATA_JOB);
         return j == null ? "" : j;
+    }
+    public void set_NPC_state(){
+        if(getJobSynced() !=null &&getJobSynced().isEmpty()){
+            this.entityData.set(NPC_STATE,"空闲");
+        }
     }
 
     public void openInventoryFor(ServerPlayer player) {
@@ -123,10 +156,51 @@ public class NPC extends PathfinderMob {
     public void unemploy_NPC(){
         this.job="";
         this.entityData.set(DATA_JOB, "");
+        this.entityData.set(NPC_STATE,"空闲");
     }
 
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         return npc_GUI.onInteract(this, player, hand);
     }
+
+    @Override
+    public  void pickUpItem(ItemEntity itemEntity) {
+        ItemStack itemStack = itemEntity.getItem();
+
+
+        ItemStack remaining = this.inventory.addItem(itemStack);
+
+        // 如果还有剩余的（说明背包满了装不下）
+        if (remaining.isEmpty()) {
+            // 全部装进去了！
+            itemEntity.discard(); // 销毁地上的物品实体
+            this.take(itemEntity, itemStack.getCount()); // 播放原版捡东西的音效和动画
+        } else {
+
+            itemEntity.setItem(remaining);
+        }
+    }
+
+    public void set_NPC_home(BlockPos pos ){
+        Level l = this.level();
+        if(!l.isClientSide()){
+            BlockEntity be = l.getBlockEntity(pos);
+            if(be instanceof residence_block_entity){
+                this.NPC_home=((residence_block_entity) be).getBindPos();
+
+            }
+        }
+
+    }
+    public void qingli_NPC_home(Player player) {
+        BlockPos po =player.getData(TOWN_CENTER);
+        if(po !=null){
+            this.NPC_home=po;
+        }else{
+            this.NPC_home = null;
+        }
+    }
+
 }
+

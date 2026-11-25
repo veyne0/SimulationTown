@@ -134,6 +134,19 @@ public final class building_ui {
             // 建筑没了，建造者失业（清职业），拆了才能重新招人
             unemployBuilder(holder.player, level, data.getEmployNpc());
             writeEmploy(be, null);              // 雇佣/建造者也清掉
+            // 住宅被拆: 入住者失去家 → 暂住镇中心 (qingli_NPC_home), 入住登记清掉
+            if (be instanceof residence_block_entity r) {
+                String res = r.get_resident_name();
+                if (res != null && !res.isEmpty()) {
+                    UUID resUuid = centerBlockEntity.get_all_NPC_uuid(holder.player, res);
+                    if (resUuid != null && level.getEntity(resUuid) instanceof NPC resNpc) {
+                        resNpc.qingli_NPC_home(holder.player);
+                        holder.player.sendSystemMessage(Component.literal(
+                                res + " 的家被拆了，暂时住镇中心").withStyle(ChatFormatting.YELLOW));
+                    }
+                    r.qingli_resident_name();
+                }
+            }
         });
 
         // 雇佣建造：打开二级选人界面（候选 = 玩家 ALL_NPC 名单里在场且空闲的 NPC）。
@@ -211,6 +224,31 @@ public final class building_ui {
             root.addChild(shopRow);
         }
 
+        // 住宅专属: 分配住宅 (把无家/暂住镇中心的 NPC 安置进这栋空房)
+        if ("住宅".equals(categoryName)) {
+            Button btnHome = new Button();
+            btnHome.setText("分配住宅");
+            btnHome.layout(l -> l.width(84).height(18));
+            btnHome.setOnServerClick(e -> {
+                if (data == null || !(be.getLevel() instanceof ServerLevel level)
+                        || !(holder.player instanceof ServerPlayer sp)) return;
+                List<String> candidates = homelessNpcs(sp, level);
+                if (candidates.isEmpty()) {
+                    sp.sendSystemMessage(Component.literal(
+                            "没有无家可归的 NPC").withStyle(ChatFormatting.YELLOW));
+                    return;
+                }
+                HIRE_SESSIONS.put(sp.getUUID(),
+                        new HireSession(be.getBlockPos(), candidates, -1, false, true));
+                com.lowdragmc.lowdraglib2.gui.factory.PlayerUIMenuType.openUI(sp, npc_hire_ui.UI_ID);
+            });
+
+            UIElement homeRow = new UIElement();
+            homeRow.layout(l -> l.flexDirection(FlexDirection.ROW).height(18));
+            homeRow.addChildren(btnHome);
+            root.addChild(homeRow);
+        }
+
         return ModularUI.of(
                 UI.of(root, StylesheetManager.INSTANCE.getStylesheetSafe(StylesheetManager.GDP)),
                 holder.player);
@@ -218,12 +256,19 @@ public final class building_ui {
 
     /**
      * 选人会话（按玩家记）：buildingPos = 要雇人的建筑；candidates = 空闲 NPC 名单；
-     * selected = 当前选中的候选下标（-1 = 还没选）；shopMode = true 是雇店员（不上岗盖楼）。
+     * selected = 当前选中的候选下标（-1 = 还没选）；
+     * shopMode = true 是雇店员（不上岗盖楼）；homeMode = true 是分配住宅（选谁搬进来）。
      */
-    public record HireSession(BlockPos buildingPos, List<String> candidates, int selected, boolean shopMode) {
-        /** 盖楼雇佣（旧签名, shopMode = false） */
+    public record HireSession(BlockPos buildingPos, List<String> candidates, int selected,
+                              boolean shopMode, boolean homeMode) {
+        /** 盖楼雇佣（旧签名, shopMode = homeMode = false） */
         public HireSession(BlockPos buildingPos, List<String> candidates, int selected) {
-            this(buildingPos, candidates, selected, false);
+            this(buildingPos, candidates, selected, false, false);
+        }
+
+        /** 雇店员（旧签名, homeMode = false） */
+        public HireSession(BlockPos buildingPos, List<String> candidates, int selected, boolean shopMode) {
+            this(buildingPos, candidates, selected, shopMode, false);
         }
     }
 
@@ -242,6 +287,57 @@ public final class building_ui {
             }
         }
         return out;
+    }
+
+    /** 玩家名单里无家可归的 NPC：NPC_home 为空，或暂住镇中心（家被拆后的安置点）。 */
+    public static List<String> homelessNpcs(ServerPlayer sp, ServerLevel level) {
+        List<String> out = new ArrayList<>();
+        BlockPos tc = sp.getExistingDataOrNull(SimulationTown.TOWN_CENTER);
+        List<String> names = centerBlockEntity.get_all_NPC_name(sp);
+        if (names == null) return out;
+        for (String n : names) {
+            UUID uuid = centerBlockEntity.get_all_NPC_uuid(sp, n);
+            if (uuid != null && level.getEntity(uuid) instanceof NPC npc) {
+                BlockPos h = npc.NPC_home;
+                if (h == null || h.equals(tc)) {
+                    out.add(n);
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 分配住宅：把选中的 NPC 安置进这栋住宅（NPC_home = 住宅坐标，r_resident 登记）。
+     * 登记的入住者还活着就拒绝；只剩名字（NPC 已死/失踪）自动清退再分配。
+     * 失败返回 false（会话保留，可换人再确认），成功后调用方清会话。
+     */
+    public static boolean assignHome(ServerPlayer sp, ServerLevel level, BlockEntity be, String name) {
+        if (!(be instanceof residence_block_entity r)) return false;
+        // 旧入住者还活着 → 不许换人; 只剩登记名字 → 自动清退
+        String old = r.get_resident_name();
+        if (!old.isEmpty()) {
+            UUID oldUuid = centerBlockEntity.get_all_NPC_uuid(sp, old);
+            if (oldUuid != null && level.getEntity(oldUuid) instanceof NPC) {
+                sp.sendSystemMessage(Component.literal(
+                        "这里已有 " + old + " 住着，换人得先清退").withStyle(ChatFormatting.YELLOW));
+                return false;
+            }
+            r.qingli_resident_name();
+            sp.sendSystemMessage(Component.literal(
+                    old + " 的入住登记已失效，自动清退").withStyle(ChatFormatting.YELLOW));
+        }
+        UUID uuid = centerBlockEntity.get_all_NPC_uuid(sp, name);
+        if (uuid == null || !(level.getEntity(uuid) instanceof NPC npc)) {
+            sp.sendSystemMessage(Component.literal(
+                    "「" + name + "」不在场，换一个吧").withStyle(ChatFormatting.RED));
+            return false;
+        }
+        npc.NPC_home = r.getBlockPos().immutable();
+        r.set_resident_name(npc.getName().getString());
+        sp.sendSystemMessage(Component.literal(
+                npc.getName().getString() + " 搬进了这里").withStyle(ChatFormatting.GREEN));
+        return true;
     }
 
     /** 把名字对应的 NPC 指派给这座建筑（owner = 当前玩家，缺料提示发给他）。失败返回 false。 */

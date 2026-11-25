@@ -174,6 +174,7 @@ public class centerBlockEntity extends BlockEntity {
     public BlockPos get_pos(){
        return this.pos;
     }
+
     public void zuobiao(){
        this.pos=getBlockPos();
 

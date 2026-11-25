@@ -64,7 +64,8 @@ public class npc_hire_ui {
             building_ui.HireSession session = session(player);
             if (session == null) return Component.literal("没有待选的建造任务");
             int total = (session.candidates().size() + PAGE_SIZE - 1) / PAGE_SIZE;
-            String verb = session.shopMode() ? "选个 NPC 当店员" : "选个 NPC 来盖";
+            String verb = session.homeMode() ? "选个 NPC 住进来"
+                    : session.shopMode() ? "选个 NPC 当店员" : "选个 NPC 来盖";
             return Component.literal(verb + "（" + (page[0] + 1) + "/" + total + " 页）");
         }).build());
         root.addChild(title);
@@ -96,7 +97,7 @@ public class npc_hire_ui {
                 int global = page[0] * PAGE_SIZE + slot;
                 if (global >= s.candidates().size()) return;
                 building_ui.HIRE_SESSIONS.put(sp.getUUID(), new building_ui.HireSession(
-                        s.buildingPos(), s.candidates(), global, s.shopMode()));
+                        s.buildingPos(), s.candidates(), global, s.shopMode(), s.homeMode()));
             });
 
             Label name = new Label();
@@ -155,7 +156,7 @@ public class npc_hire_ui {
         footer.addChild(btnNext);
 
         Button btnConfirm = new Button();
-        btnConfirm.setText("确认雇佣");
+        btnConfirm.setText("确认");   // 盖楼/店员/住宅三种模式通用
         btnConfirm.layout(l -> l.width(66).height(18));
         btnConfirm.setOnServerClick(e -> {
             if (!(player instanceof ServerPlayer sp)) return;
@@ -177,10 +178,15 @@ public class npc_hire_ui {
                 return;
             }
             // 失败（人不在/被别处抢走）保留会话，可以换人再确认；成功 hire 内部清会话
-            // 店员模式: 不开建造任务, 直接上岗 SHOPER
-            boolean ok = s.shopMode()
-                    ? building_ui.hireShopkeeper(sp, level, be, data, name)
-                    : building_ui.hire(sp, level, be, data, name);
+            // 店员模式: 不开建造任务, 直接上岗 SHOPER; 住宅模式: 选谁搬进来
+            boolean ok;
+            if (s.homeMode()) {
+                ok = building_ui.assignHome(sp, level, be, name);
+            } else if (s.shopMode()) {
+                ok = building_ui.hireShopkeeper(sp, level, be, data, name);
+            } else {
+                ok = building_ui.hire(sp, level, be, data, name);
+            }
             if (ok) {
                 building_ui.HIRE_SESSIONS.remove(sp.getUUID());
                 BlockUIMenuType.openUI(sp, pos);       // 回到建筑界面（上一级），当前界面自动被替换

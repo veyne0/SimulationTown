@@ -6,6 +6,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.UI;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.sync.bindings.impl.SimpleBinding;
@@ -125,14 +126,57 @@ public final class centerblock_GUI {
             levelLabel.setText("等级：--");
         }
 
-        // ---- 正文：内容随 page 变化，仍然是服务端算好推过来 ----
-        Label body = new Label();
-        body.layout(l -> l.flexGrow(1));
+        // ---- 升级页专用内容：标题 / 材料行(物品图标+文字) / 经济行 ----
+        // 显隐全部由文件末尾的 pageLabel 绑定控制 (只有停在升级页且未满级时才显示)
+        Label upgradeTitle = new Label();
+        upgradeTitle.layout(l -> l.height(12));
+        upgradeTitle.setVisible(false);
+
+        ItemSlot upgradeIcon = new ItemSlot();
+        upgradeIcon.layout(l -> l.width(18).height(18));
         if (center != null) {
-            body.bind(DataBindingBuilder.componentS2C(
-                    () -> Component.literal(pageText(page[0], center, holder.player))).build());
+            // 材料图标: 服务端按当前等级把所需物品推给客户端 (物品数量就是需求的数量)
+            upgradeIcon.bind(DataBindingBuilder.itemStackS2C(() -> {
+                if (page[0] != 3 || center.get_level() >= center.max_level) return ItemStack.EMPTY;
+                UpgradeNeed need = needFor(center.get_level());
+                return new ItemStack(need.item(), need.count());
+            }).build());
+        }
+
+        Label upgradeItem = new Label();
+        upgradeItem.layout(l -> l.flexGrow(1).height(16));
+        upgradeItem.setVisible(false);
+
+        Label upgradeEco = new Label();
+        upgradeEco.layout(l -> l.height(12));
+        upgradeEco.setVisible(false);
+
+        if (center != null) {
+            upgradeTitle.bind(DataBindingBuilder.componentS2C(() -> {
+                if (page[0] != 3 || center.get_level() >= center.max_level) return Component.literal("");
+                return Component.literal("升级到 " + (center.get_level() + 1) + " 级需要：");
+            }).build());
+            upgradeItem.bind(DataBindingBuilder.componentS2C(() -> {
+                if (page[0] != 3 || center.get_level() >= center.max_level) return Component.literal("");
+                UpgradeNeed need = needFor(center.get_level());
+                int have = countItem(holder.player, need.item());
+                return Component.literal((have >= need.count() ? "✔" : "✘") + " "
+                        + need.item().getDescription().getString()
+                        + " " + have + " / " + need.count());
+            }).build());
+            upgradeEco.bind(DataBindingBuilder.componentS2C(() -> {
+                if (page[0] != 3 || center.get_level() >= center.max_level) return Component.literal("");
+                UpgradeNeed need = needFor(center.get_level());
+                double haveJingji = holder.player.getData(SimulationTown.PLAYER_JINGJI);
+                String jingjiText = haveJingji == Math.floor(haveJingji)
+                        ? String.valueOf((long) haveJingji) : String.format("%.2f", haveJingji);
+                return Component.literal((haveJingji >= need.jingji() ? "✔" : "✘") + " 经济 "
+                        + jingjiText + " / " + need.jingji());
+            }).build());
         } else {
-            body.setText("居民：--\n建筑：--");
+            upgradeTitle.setText("--");
+            upgradeItem.setText("--");
+            upgradeEco.setText("--");
         }
 
         // ---- 升级页专用按钮：只有停在升级页时才显示 ----
@@ -158,9 +202,15 @@ public final class centerblock_GUI {
         UIElement content = new UIElement();
         content.layout(l -> l.flexDirection(FlexDirection.COLUMN)
                 .flexGrow(1).heightPercent(100).paddingAll(8).gapAll(6));
+        // 材料行: 图标 + 文字并排
+        UIElement upgradeRow = new UIElement();
+        upgradeRow.layout(l -> l.flexDirection(FlexDirection.ROW).height(18).gapAll(4));
+        upgradeRow.addChildren(upgradeIcon, upgradeItem);
+        upgradeRow.setVisible(false);
+
         UIElement rest = new UIElement();
         rest.layout(l -> l.flexDirection(FlexDirection.COLUMN).flexGrow(1).gapAll(6));
-        rest.addChildren(levelLabel, body, btnDoUpgrade);
+        rest.addChildren(levelLabel, upgradeTitle, upgradeRow, upgradeEco, btnDoUpgrade);
 
         // 两个隐藏 Label：文字分别是"有没有名字""是不是升级页"，回调里据此切显隐
         Label namedLabel = new Label();
@@ -179,16 +229,6 @@ public final class centerblock_GUI {
         btnOverview.setText("概览");
         btnOverview.layout(l -> l.widthPercent(100).height(20));
         btnOverview.setOnServerClick(e -> page[0] = 0);
-
-        Button btnResidents = new Button();
-        btnResidents.setText("居民");
-        btnResidents.layout(l -> l.widthPercent(100).height(20));
-        btnResidents.setOnServerClick(e -> page[0] = 1);
-
-        Button btnBuildings = new Button();
-        btnBuildings.setText("建筑");
-        btnBuildings.layout(l -> l.widthPercent(100).height(20));
-        btnBuildings.setOnServerClick(e -> page[0] = 2);
 
         Button btnUpgrade = new Button();
         btnUpgrade.setText("升级");
@@ -217,7 +257,7 @@ public final class centerblock_GUI {
             sp.displayClientMessage(Component.literal(msg), true);
         });
 
-        sidebar.addChildren(btnOverview, btnResidents, btnBuildings, btnUpgrade, btnAbandon);
+        sidebar.addChildren(btnOverview, btnUpgrade, btnAbandon);
 
         // ---- 根容器：左右两栏 ----
         UIElement root = new UIElement();
@@ -241,9 +281,14 @@ public final class centerblock_GUI {
                     }).build());
 
             pageLabel.bind(DataBindingBuilder.componentS2C(
-                            () -> Component.literal(page[0] == 3 ? "1" : "0"))
-                    .onRemoteSyncReceived(c -> btnDoUpgrade.setVisible("1".equals(c.getString())))
-                    .build());
+                            () -> Component.literal(page[0] == 3 && center.get_level() < center.max_level ? "1" : "0"))
+                    .onRemoteSyncReceived(c -> {
+                        boolean ok = "1".equals(c.getString());
+                        btnDoUpgrade.setVisible(ok);
+                        upgradeTitle.setVisible(ok);
+                        upgradeRow.setVisible(ok);
+                        upgradeEco.setVisible(ok);
+                    }).build());
         } else {
             // 拿不到方块实体（理论上不会发生）：只留命名界面，别让玩家点出事
             nameRow.setVisible(true);
@@ -256,62 +301,20 @@ public final class centerblock_GUI {
                 holder.player);
     }
 
-    // ======== 正文文案（服务端算） ========
+    // ======== 升级需求（服务端算） ========
 
-    private static String pageText(int page, centerBlockEntity c, Player p) {
-        return switch (page) {
-            case 1 -> "居民：" + c.get_now_resident() + " / " + c.now_max_resident;
-            case 2 -> "建筑：0 / 3";
-            case 3 -> upgradeText(c, p);
-            default -> "居民：" + c.get_now_resident() + " / " + c.now_max_resident
-                    + "\n建筑：0 / 3";
-        };
+    /** 每一级的升级需求: 材料 + 数量 + 经济 */
+    private record UpgradeNeed(Item item, int count, int jingji) {
     }
 
-    /** 升级页：列出这一级要什么、你有多少。数值与 shengji() 里的判断保持一致。 */
-    private static String upgradeText(centerBlockEntity c, Player p) {
-        int lv = c.get_level();
-        if (lv >= c.max_level) {
-            return "等级：" + lv + " / " + c.max_level + "\n已经最高级了。";
-        }
-
-        Item need;
-        int needCount;
-        int needJingji;
-        switch (lv) {
-            case 1 -> {
-                need = Items.IRON_INGOT;
-                needCount = 64;
-                needJingji = 10;
-            }
-            case 2 -> {
-                need = Items.GOLD_INGOT;
-                needCount = 64;
-                needJingji = 500;
-            }
-            case 3 -> {
-                need = Items.DIAMOND;
-                needCount = 64;
-                needJingji = 5000;
-            }
-            default -> {
-                need = Items.NETHER_STAR;
-                needCount = 1;
-                needJingji = 20000;
-            }
-        }
-
-        int haveItem = countItem(p, need);
-        double haveJingji = p.getData(SimulationTown.PLAYER_JINGJI);
-        String jingjiText = haveJingji == Math.floor(haveJingji)
-                ? String.valueOf((long) haveJingji) : String.format("%.2f", haveJingji);
-
-        String itemName = need.getDescription().getString();
-        return "升级到 " + (lv + 1) + " 级需要："
-                + "\n" + (haveItem >= needCount ? "✔" : "✘") + " " + itemName
-                + " " + haveItem + " / " + needCount
-                + "\n" + (haveJingji >= needJingji ? "✔" : "✘") + " 经济 "
-                + jingjiText + " / " + needJingji;
+    /** 按当前等级取需求。数值与 centerBlockEntity.shengji() 里的判断保持一致。 */
+    private static UpgradeNeed needFor(int lv) {
+        return switch (lv) {
+            case 1 -> new UpgradeNeed(Items.IRON_INGOT, 64, 10);
+            case 2 -> new UpgradeNeed(Items.GOLD_INGOT, 64, 500);
+            case 3 -> new UpgradeNeed(Items.DIAMOND, 64, 5000);
+            default -> new UpgradeNeed(Items.NETHER_STAR, 1, 20000);
+        };
     }
 
     /** 数玩家背包里某种物品的总数。 */
