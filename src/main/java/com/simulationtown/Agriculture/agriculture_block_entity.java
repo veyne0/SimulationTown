@@ -14,9 +14,10 @@ import java.util.UUID;
 public class agriculture_block_entity extends BlockEntity implements BuildingData {
     public String a_building_id = "";
     int[] a_building_box ;
-    public int a_GDP;
+    public double a_GDP;
     public int a_block_count;
     public UUID a_builder_UUID;
+    public BlockPos a_town_pos;
 
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int a_rotation_steps = 0;
@@ -39,7 +40,7 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         tag.putString("builder_name", this.builder_name);
         tag.putBoolean("build_state", this.i_build_state);
         tag.putDouble("completion", this.i_Completion_level);
-        tag.putInt("a_GDP",this.a_GDP);
+        tag.putDouble("a_GDP",this.a_GDP);
         tag.putInt("a_block_count",this.a_block_count);
         tag.putInt("a_rotation_steps",this.a_rotation_steps);
         if  (this.a_building_box!=null){
@@ -49,6 +50,10 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
             tag.putString("a_building_id",this.a_building_id);
         }
         tag.putUUID("a_builder_UUID",this.a_builder_UUID);
+
+        if(this.a_town_pos!=null){
+            tag.putLong("a_town_pos",this.a_town_pos.asLong());
+        }
     }
 
     @Override
@@ -60,11 +65,16 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         this.i_Completion_level = tag.getDouble("completion");
         this.a_building_box=tag.getIntArray("a_building_box");
         this.a_building_id=tag.getString("a_building_id");
-        this.a_GDP=tag.getInt("a_GDP");
+        this.a_GDP=tag.getDouble("a_GDP");
         this.a_block_count=tag.getInt("a_block_count");
         this.a_rotation_steps=tag.getInt("a_rotation_steps");
         if (tag.hasUUID("a_builder_UUID")) {
             this.a_builder_UUID=tag.getUUID("a_builder_UUID");   // 旧存档没有此键时保持 null, 不炸
+        }
+
+
+        if(tag.contains("a_tonw_pos")){
+            this.a_town_pos=BlockPos.of(tag.getLong("a_town_pos"));
         }
     }
     public UUID a_get_builder_UUID(){
@@ -126,13 +136,13 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         return this.i_Completion_level;
     }
 
-    public int get_a_GDP(){
+    public double get_a_GDP(){
         return this.a_GDP;
     }
-    public void sava_a_GDP(){
-        if (this.a_GDP !=0){
-            this.setChanged();
-        }
+    public void sava_a_GDP(double a){
+        this.a_GDP=a;
+        this.setChanged();
+
     }
     public int get_a_block_count(){
         return this.a_block_count;
@@ -178,5 +188,17 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
     @Override
     public BlockPos getBindPos() {
         return this.getBlockPos();
+    }
+
+    public void set_block_count(int i){
+        this.a_block_count=i;
+        this.setChanged();
+
+    }
+
+    @Override
+    public void settown(BlockPos bp){
+        this.a_town_pos=bp;
+
     }
 }

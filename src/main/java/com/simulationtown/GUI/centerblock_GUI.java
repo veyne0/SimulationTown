@@ -240,15 +240,15 @@ public final class centerblock_GUI {
         btnAbandon.setText("放弃小镇");
         btnAbandon.layout(l -> l.widthPercent(100).height(20));
         // 服务端回调：qingli 返回结果消息 —— 成功才关界面、删方块；没下界之星就只提示
-        // 注意：玩家 removeData 只能清玩家附件；GDP 登记/人口去重记录在维度 SavedData 里，
-        // 必须额外调 buildlib 的 clearTown，否则同位置重建会出现"旧建筑还在算 GDP/新镇不补 NPC"
+        // 注意：玩家 removeData 只能清玩家附件；人口去重记录在维度 SavedData 里，
+        // 必须调 PopulationManager.clearTown，否则同位置重建会出现"新镇不补 NPC"
+        // (GDP 登记已迁往主程序镇中心 BE, 拆镇自动消失, 无需清理)
         btnAbandon.setOnServerClick(e -> {
             if (center == null) return;
             ServerPlayer sp = (ServerPlayer) holder.player;
             String msg = center.qingli(sp);
             if ("已放弃小镇".equals(msg)) {
                 if (sp.level() instanceof net.minecraft.server.level.ServerLevel sl) {
-                    com.buildlib.economy.GdpManager.clearTown(sl, holder.pos);
                     com.buildlib.population.PopulationManager.clearTown(sl, holder.pos);
                 }
                 sp.closeContainer();                       // 界面正盯着这个方块，先关掉

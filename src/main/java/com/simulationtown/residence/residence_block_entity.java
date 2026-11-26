@@ -14,11 +14,13 @@ import java.util.UUID;
 public class residence_block_entity extends BlockEntity implements BuildingData {
     public String r_building_id = "";
     int[] r_building_box ;
-    public int r_GDP;
+    public double r_GDP;
     public int r_block_count;
     public UUID r_builder_UUID;
     public BlockPos r_pos;
     public String resident_name;
+
+    public BlockPos r_town_pos;
 
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int r_rotation_steps = 0;
@@ -40,7 +42,7 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         tag.putBoolean("build_state", this.i_build_state);
         tag.putDouble("completion", this.i_Completion_level);
         tag.putInt("r_block_count",this.r_block_count);
-        tag.putInt("r_GDP",this.r_GDP);
+        tag.putDouble("r_GDP",this.r_GDP);
         tag.putInt("r_rotation_steps",this.r_rotation_steps);
         if  (this.r_building_box!=null){
             tag.putIntArray("r_building_box",this.r_building_box);
@@ -57,6 +59,9 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         if(this.resident_name !=null){
             tag.putString("resident_name",this.resident_name);
         }
+        if(this.r_town_pos!=null){
+            tag.putLong("r_town_pos",this.r_town_pos.asLong());
+        }
 
     }
 
@@ -70,7 +75,7 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         this.r_building_box=tag.getIntArray("r_building_box");
         this.r_building_id=tag.getString("r_building_id");
         this.r_block_count=tag.getInt("r_block_count");
-        this.r_GDP=tag.getInt("r_GDP");
+        this.r_GDP=tag.getDouble("r_GDP");
         this.r_rotation_steps=tag.getInt("r_rotation_steps");
         if(tag.hasUUID("r_builder_UUID")){
             this.r_builder_UUID=tag.getUUID("r_builder_UUID");
@@ -80,6 +85,9 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         }
         if(tag.contains("resident_name")){
             this.resident_name=tag.getString("resident_name");
+        }
+        if(tag.contains("r_town_pos")){
+            this.r_town_pos=BlockPos.of(tag.getLong("r_town_pos"));
         }
 
     }
@@ -121,6 +129,7 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
     }
 
     public int get_r_block_count(){
+
         return this.r_block_count;
     }
     public void sava_r_block_count(){
@@ -129,13 +138,13 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
         }
     }
 
-    public int get_r_GDP(){
+    public double get_r_GDP(){
         return this.r_GDP;
     }
-    public void sava_r_GDP(){
-        if (this.r_GDP !=0){
-            this.setChanged();
-        }
+    public void sava_r_GDP(double r){
+        this.r_GDP=r;
+        this.setChanged();
+
     }
 
     @Override
@@ -208,6 +217,16 @@ public class residence_block_entity extends BlockEntity implements BuildingData 
     }
     public void qingli_resident_name(){
         this.resident_name="";
+    }
+    public void set_block_count(int i){
+        this.r_block_count=i;
+        this.setChanged();
+
+    }
+    @Override
+    public void settown(BlockPos bp){
+        this.r_town_pos=bp;
+
     }
 
 }

@@ -14,9 +14,11 @@ import java.util.UUID;
 public class industry_block_entity extends BlockEntity implements  BuildingData {
     public String i_building_id = "";
     int[] i_building_box ;
-    public int i_GDP;
+    public double i_GDP;
     public int i_block_count;
     public UUID i_builder_UUID;
+
+    public BlockPos i_town_pos;
 
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int i_rotation_steps = 0;
@@ -38,7 +40,7 @@ public class industry_block_entity extends BlockEntity implements  BuildingData 
         tag.putString("builder_name", this.builder_name);
         tag.putBoolean("build_state", this.i_build_state);
         tag.putDouble("completion", this.i_Completion_level);
-        tag.putInt("i_GDP",this.i_GDP);
+        tag.putDouble("i_GDP",this.i_GDP);
         tag.putInt("i_block_count",this.i_block_count);
         tag.putInt("i_rotation_steps",this.i_rotation_steps);
         if  (this.i_building_box!=null){
@@ -48,6 +50,9 @@ public class industry_block_entity extends BlockEntity implements  BuildingData 
             tag.putString("i_building_id",this.i_building_id);
         }
         tag.putUUID("i_builder_UUID",this.i_builder_UUID);
+        if(this.i_town_pos!=null){
+            tag.putLong("i_town_pos",this.i_town_pos.asLong());
+        }
 
     }
 
@@ -60,11 +65,15 @@ public class industry_block_entity extends BlockEntity implements  BuildingData 
         this.i_Completion_level = tag.getDouble("completion");
         this.i_building_box=tag.getIntArray("i_building_box");
         this.i_building_id=tag.getString("i_building_id");
-        this.i_GDP=tag.getInt("i_GDP");
+        this.i_GDP=tag.getDouble("i_GDP");
         this.i_block_count=tag.getInt("i_block_count");   // 原来误写成 "i_block_acount", 键名对不上永远读到 0
         this.i_rotation_steps=tag.getInt("i_rotation_steps");
         if (tag.hasUUID("i_builder_UUID")) {
             this.i_builder_UUID=tag.getUUID("i_builder_UUID");   // 旧存档没有此键时保持 null, 不炸
+        }
+
+        if(tag.contains("i_town_pos")){
+            this.i_town_pos=BlockPos.of(tag.getLong("i_town_pos"));
         }
     }
     public UUID i_get_builder_UUID(){
@@ -104,13 +113,13 @@ public class industry_block_entity extends BlockEntity implements  BuildingData 
         return this.i_building_id;
     }
 
-    public int get_i_GDP(){
+    public double get_i_GDP(){
         return this.i_GDP;
     }
-    public void sava_i_GDP(){
-        if (this.i_GDP !=0){
-            this.setChanged();
-        }
+    public void sava_i_GDP(double i){
+        this.i_GDP=i;
+        this.setChanged();
+
     }
     public int get_i_block_count(){
         return this.i_block_count;
@@ -179,6 +188,18 @@ public class industry_block_entity extends BlockEntity implements  BuildingData 
     @Override
     public BlockPos getBindPos() {
         return this.getBlockPos();
+    }
+
+    public void set_block_count(int i){
+        this.i_block_count=i;
+        this.setChanged();
+
+    }
+
+    @Override
+    public void settown(BlockPos bp){
+        this.i_town_pos=bp;
+
     }
 }
 

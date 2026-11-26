@@ -140,6 +140,17 @@ public class SimulationTown {
                             .copyOnDeath()
                             .build());
 
+    public static final Supplier<AttachmentType<Integer>> LAST_DAY =
+            ATTACHMENT_TYPES.register("last_day", () ->
+                    AttachmentType.builder(() -> (int) 0)
+                            .serialize(Codec.INT)
+                            .sync(ByteBufCodecs.INT)
+                            .copyOnDeath()
+                            .build());
+
+
+
+
 
 
 }

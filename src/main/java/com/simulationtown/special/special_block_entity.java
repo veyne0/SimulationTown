@@ -15,6 +15,8 @@ public class special_block_entity extends BlockEntity implements BuildingData {
     public String s_building_id = "";
     int[] s_building_box ;
     public UUID s_builder_UUID;
+    public int s_block_count;
+    public BlockPos s_town_pos;
 
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int s_rotation_steps = 0;
@@ -44,6 +46,9 @@ public class special_block_entity extends BlockEntity implements BuildingData {
         if (this.s_builder_UUID !=null){
             tag.putUUID("s_builder_UUID",this.s_builder_UUID);
         }
+        if(this.s_town_pos!=null){
+            tag.putLong("s_town_pos",this.s_town_pos.asLong());
+        }
 
     }
 
@@ -60,6 +65,9 @@ public class special_block_entity extends BlockEntity implements BuildingData {
         this.s_rotation_steps=tag.getInt("s_rotation_steps");
         if (tag.hasUUID("s_builder_UUID")) {
             this.s_builder_UUID=tag.getUUID("s_builder_UUID");   // 旧存档没有此键时保持 null, 不炸
+        }
+        if(tag.contains("s_town_pos")){
+            this.s_town_pos=BlockPos.of(tag.getLong("s_town_pos"));
         }
     }
 
@@ -156,5 +164,17 @@ public class special_block_entity extends BlockEntity implements BuildingData {
     @Override
     public BlockPos getBindPos() {
         return this.getBlockPos();
+    }
+
+
+    public void set_block_count(int i){
+        this.s_block_count=i;
+        this.setChanged();
+
+    }
+    @Override
+    public void settown(BlockPos bp){
+        this.s_town_pos=bp;
+
     }
 }

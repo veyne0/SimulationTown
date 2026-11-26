@@ -6,14 +6,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 
+import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static com.simulationtown.SimulationTown.*;
 import static com.simulationtown.towncenter.consume.hasItem;
@@ -32,10 +31,14 @@ public class centerBlockEntity extends BlockEntity {
     public int resident_building_count;
     public int NPC_count;
 
+    public Map<BlockPos ,Double> GDP_manager= new HashMap<>();
+
     public centerBlockEntity(BlockPos pos , BlockState state){
 
         super(block.CBE.get(),pos ,state);
    }
+
+
 
     public static void sava_all_NPC(String name, UUID uuid ,Player player){
         List<CompoundTag> all_NPC = new ArrayList<>(player.getData(ALL_NPC));
@@ -84,6 +87,15 @@ public class centerBlockEntity extends BlockEntity {
        tag.putInt("now_max_resident",this.now_max_resident);
        tag.putInt("NPC_count",this.NPC_count);
        tag.putInt("resident_building_count",this.resident_building_count);
+       ListTag lt = new ListTag();
+       for(Map.Entry<BlockPos,Double> et : GDP_manager.entrySet()){
+           CompoundTag ct=new CompoundTag();
+           ct.putLong("key",et.getKey().asLong());
+           ct.putDouble("value",et.getValue());
+
+           lt.add(ct);
+       }
+       tag.put("GDP_manager",lt);
 
    }
 
@@ -99,6 +111,17 @@ public class centerBlockEntity extends BlockEntity {
         this.now_max_resident=tag.getInt("now_max_resident");
         this.resident_building_count=tag.getInt("resident_building_count");
         this.NPC_count=tag.getInt("NPC_count");
+
+        GDP_manager.clear();
+        if(tag.contains("GDP_manager")){
+            ListTag lt =tag.getList("GDP_manager", ListTag.TAG_COMPOUND);
+            for(int i=0;i<lt.size();i++){
+                CompoundTag ct =lt.getCompound(i);
+                BlockPos key=BlockPos.of(ct.getLong("key"));
+                Double value=ct.getDouble("value");
+                GDP_manager.put(key,value);
+            }
+        }
 
     }
 

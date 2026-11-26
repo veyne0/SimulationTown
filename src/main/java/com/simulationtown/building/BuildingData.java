@@ -17,6 +17,8 @@ public interface BuildingData {
     void setBuildFinished(boolean finished);
     void setCompletion(double value);
 
+    void set_block_count(int i);
+
     // ---- NPC 重建需要的信息 (buildlib 读取) ----
     /** 建造时的旋转步数 0~3 */
     int getRotationSteps();
@@ -24,4 +26,8 @@ public interface BuildingData {
     void setRotationSteps(int steps);
     /** 这个管理方块自己的坐标 (任务持久化后按坐标找回 BE) */
     BlockPos getBindPos();
+
+
+
+    void settown(BlockPos bp);
 }

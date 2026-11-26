@@ -1,13 +1,10 @@
 package com.simulationtown.towncenter;
 
-import com.buildlib.economy.GdpManager;
 import com.simulationtown.SimulationTown;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -16,7 +13,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.text.DecimalFormat;
 
@@ -56,19 +52,5 @@ public class HUD {
         );
     }
 
-    @EventBusSubscriber(modid = "simulation_town")
-    public class hud_tick {
-        private static int timer = 0;
-        @SubscribeEvent
-        static void onServerTick(ServerTickEvent.Post e) {
-            if (++timer < 20) return;              // 每秒一次
-            timer = 0;
-            for (ServerPlayer p : e.getServer().getPlayerList().getPlayers()) {
-                // 多人各建各的镇: 按玩家 TOWN_CENTER 查他自己那个镇的累计产值, 而不是全维度混总
-                p.setData(SimulationTown.TOWN_GDP,
-                    GdpManager.queryTownCumulative(p.serverLevel(), p.getData(SimulationTown.TOWN_CENTER)));
-            }
-        }
-    }
 
 }
