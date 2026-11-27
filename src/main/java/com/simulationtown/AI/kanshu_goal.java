@@ -54,7 +54,7 @@ public class kanshu_goal extends Goal {
 
         if (npc.blockPosition().closerThan(work_pos, 4.5D)) {
             if (!npc.getNavigation().isDone()) {
-                npc.getNavigation().stop();   // 够得着就别再往树上挤
+                npc.getNavigation().stop();
             }
 
             npc.swing(InteractionHand.MAIN_HAND);
