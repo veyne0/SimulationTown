@@ -22,6 +22,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
 
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
+import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
@@ -40,6 +41,7 @@ public class NPC extends PathfinderMob {
     public String shopBuildingId;
     public int skinIndex = (int)(Math.random()*10);
     public BlockPos NPC_home;
+    public BlockPos guanliblock_pos;
 
 
     public NPC(EntityType<? extends PathfinderMob> type, Level level) {
@@ -86,6 +88,7 @@ public class NPC extends PathfinderMob {
         this.goalSelector.addGoal(2,new pick_thing(this));
         this.goalSelector.addGoal(1,new kanshu_goal(this));
         this.goalSelector.addGoal(0, new go_home_goal(this));
+        this.goalSelector.addGoal(2, new RandomStrollGoal(this, 1.0D));
     }
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
@@ -103,6 +106,9 @@ public class NPC extends PathfinderMob {
         }
         if(this.NPC_home!=null){
             tag.putLong("NPC_home",this.NPC_home.asLong());
+        }
+        if(this.guanliblock_pos!=null){
+            tag.putLong("guanli",this.guanliblock_pos.asLong());
         }
 
     }
@@ -125,6 +131,9 @@ public class NPC extends PathfinderMob {
         if(tag.contains("NPC_home")){
             this.NPC_home=BlockPos.of(tag.getLong("NPC_home"));
 
+        }
+        if(tag.contains("guanli")){
+            this.guanliblock_pos=BlockPos.of(tag.getLong("guanli"));
         }
     }
 
@@ -153,10 +162,13 @@ public class NPC extends PathfinderMob {
         this.job=n;
         this.entityData.set(DATA_JOB, n == null ? "" : n);   // 同步到客户端
     }
+
     public void unemploy_NPC(){
         this.job="";
         this.entityData.set(DATA_JOB, "");
         this.entityData.set(NPC_STATE,"空闲");
+        this.guanliblock_pos=null;
+        this.shopBuildingId="";
     }
 
     @Override
@@ -201,6 +213,15 @@ public class NPC extends PathfinderMob {
             this.NPC_home = null;
         }
     }
+
+    /*这个应该在雇佣时将NPC绑定管理方块，然后再把NPC的工作范围设置为管理方法里设置的范围，AI写GUI时要先调用这个方法绑定*/
+    public void set_guanliblock_pos(BlockPos pos){
+        this.guanliblock_pos=pos;
+    }
+    public void qingli_guanliblock_pos(){
+        this.guanliblock_pos=null;
+    }
+
 
 }
 

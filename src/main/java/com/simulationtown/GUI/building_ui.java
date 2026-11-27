@@ -187,7 +187,29 @@ public final class building_ui {
         buttons.layout(l -> l.flexDirection(FlexDirection.ROW).gapAll(6).height(18));
         buttons.addChildren(btnShow, btnDemolish, btnHire);
 
-        root.addChildren(title, buildName, state, completion, builder, employ, boxLabel, buttons);
+        root.addChildren(title, buildName, state, completion, builder, employ, boxLabel);
+
+        // 工业/农业专属: 显示当前工作范围 (NPC 活动区域, 设置工作范围界面写入)
+        if ("工业".equals(categoryName) || "农业".equals(categoryName)) {
+            Label workRange = new Label();
+            workRange.bind(DataBindingBuilder.componentS2C(() -> {
+                BlockPos a = null, b = null;
+                if (be instanceof industry_block_entity i) {
+                    a = i.get_i_work_pos_first();
+                    b = i.get_i_work_pos_end();
+                } else if (be instanceof agriculture_block_entity ag) {
+                    a = ag.get_a_work_pos_first();
+                    b = ag.get_a_work_pos_end();
+                }
+                if (a == null || b == null) {
+                    return Component.literal("工作范围：未设置").withStyle(ChatFormatting.GRAY);
+                }
+                return Component.literal("工作范围：" + a.toShortString() + " ~ " + b.toShortString());
+            }).build());
+            root.addChild(workRange);
+        }
+
+        root.addChild(buttons);
 
         // 特殊建筑专属: 雇佣店员 (杂货铺这类 SHOPER 建筑, 盖完/换人都能直接雇, 不用再走盖楼流程)
         if ("特殊".equals(categoryName)) {
@@ -219,8 +241,8 @@ public final class building_ui {
             });
 
             UIElement shopRow = new UIElement();
-            shopRow.layout(l -> l.flexDirection(FlexDirection.ROW).height(18));
-            shopRow.addChildren(btnShopkeeper);
+            shopRow.layout(l -> l.flexDirection(FlexDirection.ROW).height(18).gapAll(6));
+            shopRow.addChildren(btnShopkeeper, fireButton(holder, be, data));
             root.addChild(shopRow);
         }
 
@@ -249,6 +271,51 @@ public final class building_ui {
             root.addChild(homeRow);
         }
 
+        // 工业/农业专属: 设置工作范围 + 雇佣工人 (建造工与工人分离, 盖完后单独上岗)
+        if ("工业".equals(categoryName) || "农业".equals(categoryName)) {
+            Button btnWork = new Button();
+            btnWork.setText("设置工作范围");
+            btnWork.layout(l -> l.width(84).height(18));
+            btnWork.setOnServerClick(e -> {
+                if (holder.player instanceof ServerPlayer sp) {
+                    work_range_ui.open(sp, be.getBlockPos());
+                }
+            });
+
+            Button btnWorker = new Button();
+            btnWorker.setText("雇佣工人");
+            btnWorker.layout(l -> l.width(72).height(18));
+            btnWorker.setOnServerClick(e -> {
+                if (data == null || !(be.getLevel() instanceof ServerLevel level)
+                        || !(holder.player instanceof ServerPlayer sp)) return;
+                String id = data.getBuildingId();
+                if (id == null || id.isEmpty()) {
+                    sp.sendSystemMessage(Component.literal(
+                            "还没绑定蓝图，先预览建造一次").withStyle(ChatFormatting.RED));
+                    return;
+                }
+                if (!data.isBuildFinished()) {
+                    sp.sendSystemMessage(Component.literal(
+                            "还没盖好，完工后再雇工人").withStyle(ChatFormatting.YELLOW));
+                    return;
+                }
+                List<String> idle = idleNpcs(sp, level);
+                if (idle.isEmpty()) {
+                    sp.sendSystemMessage(Component.literal(
+                            "没有空闲的 NPC").withStyle(ChatFormatting.RED));
+                    return;
+                }
+                HIRE_SESSIONS.put(sp.getUUID(),
+                        new HireSession(be.getBlockPos(), idle, -1, false, false, true));
+                com.lowdragmc.lowdraglib2.gui.factory.PlayerUIMenuType.openUI(sp, npc_hire_ui.UI_ID);
+            });
+
+            UIElement workRow = new UIElement();
+            workRow.layout(l -> l.flexDirection(FlexDirection.ROW).height(18).gapAll(6));
+            workRow.addChildren(btnWork, btnWorker, fireButton(holder, be, data));
+            root.addChild(workRow);
+        }
+
         return ModularUI.of(
                 UI.of(root, StylesheetManager.INSTANCE.getStylesheetSafe(StylesheetManager.GDP)),
                 holder.player);
@@ -257,18 +324,25 @@ public final class building_ui {
     /**
      * 选人会话（按玩家记）：buildingPos = 要雇人的建筑；candidates = 空闲 NPC 名单；
      * selected = 当前选中的候选下标（-1 = 还没选）；
-     * shopMode = true 是雇店员（不上岗盖楼）；homeMode = true 是分配住宅（选谁搬进来）。
+     * shopMode = true 是雇店员（不上岗盖楼）；homeMode = true 是分配住宅（选谁搬进来）；
+     * workerMode = true 是雇工人（工业/农业上岗, 设职业 + 绑管理方块）。
      */
     public record HireSession(BlockPos buildingPos, List<String> candidates, int selected,
-                              boolean shopMode, boolean homeMode) {
-        /** 盖楼雇佣（旧签名, shopMode = homeMode = false） */
+                              boolean shopMode, boolean homeMode, boolean workerMode) {
+        /** 盖楼雇佣（旧签名, 其余模式 = false） */
         public HireSession(BlockPos buildingPos, List<String> candidates, int selected) {
-            this(buildingPos, candidates, selected, false, false);
+            this(buildingPos, candidates, selected, false, false, false);
         }
 
         /** 雇店员（旧签名, homeMode = false） */
         public HireSession(BlockPos buildingPos, List<String> candidates, int selected, boolean shopMode) {
-            this(buildingPos, candidates, selected, shopMode, false);
+            this(buildingPos, candidates, selected, shopMode, false, false);
+        }
+
+        /** 盖楼雇佣/分配住宅（旧签名） */
+        public HireSession(BlockPos buildingPos, List<String> candidates, int selected,
+                           boolean shopMode, boolean homeMode) {
+            this(buildingPos, candidates, selected, shopMode, homeMode, false);
         }
     }
 
@@ -357,17 +431,9 @@ public final class building_ui {
             return false;
         }
         HIRE_SESSIONS.remove(sp.getUUID());   // 成功才清会话
-        writeEmploy(be, npc.getName().getString());
-        // 建筑伴生 json 里的职业要求 ({"job": "Chicken_farmer"}): 雇佣即上岗
-        String job = NpcBuildApi.jobFor(data.getBuildingId());
-        if (job != null) {
-            npc.set_job(job);
-            if ("SHOPER".equals(job)) {
-                npc.shopBuildingId = data.getBuildingId();   // 商店 NPC: 绑定货架来源, 右键他进商店界面
-            }
-            sp.sendSystemMessage(Component.literal(
-                    name + " 成为 " + job).withStyle(ChatFormatting.YELLOW));
-        }
+        writeEmploy(be, npc.getName().getString());   // 只记"在建者" (UI 显示 + 防重复雇)
+        // 注意: 建造工只负责盖楼 — 不设职业、不绑商店货架、不绑管理方块。
+        // 工人/店员在盖完后用「雇佣工人」/「雇佣店员」单独上岗 (hireWorker / hireShopkeeper)
         sp.sendSystemMessage(Component.literal(
                 name + " 开始建造 " + shortName(data.getBuildingId()))
                 .withStyle(ChatFormatting.GREEN));
@@ -400,6 +466,12 @@ public final class building_ui {
             return false;
         }
         String id = data.getBuildingId();
+        // 店员上岗前提: 建筑已盖完 (否则商店还没影子就能买东西)
+        if (!data.isBuildFinished()) {
+            sp.sendSystemMessage(Component.literal(
+                    "还没盖好，完工后再雇店员").withStyle(ChatFormatting.YELLOW));
+            return false;
+        }
         // 原店员退职 (换成别的 NPC 时)
         String old = data.getEmployNpc();
         if (old != null && !old.isEmpty() && !old.equals(name)) {
@@ -418,6 +490,92 @@ public final class building_ui {
         sp.sendSystemMessage(Component.literal(
                 name + " 成为 " + shortName(id) + " 的店员").withStyle(ChatFormatting.GREEN));
         return true;
+    }
+
+    /**
+     * 雇佣工人 (工业/农业): 盖完的建筑单独招人上岗 — 建造工与工人完全分离.
+     * 上岗 = 设职业 (伴生 json {"job":...}) + 绑定管理方块 (guanliblock_pos),
+     * goal 实时从 BE 读工作范围; 原工人还在岗就让他退职. 失败返回 false.
+     */
+    public static boolean hireWorker(ServerPlayer sp, ServerLevel level, BlockEntity be,
+                                     BuildingData data, String name) {
+        UUID uuid = centerBlockEntity.get_all_NPC_uuid(sp, name);
+        if (uuid == null || !(level.getEntity(uuid) instanceof NPC npc)) {
+            sp.sendSystemMessage(Component.literal(
+                    "「" + name + "」不在场，换一个吧").withStyle(ChatFormatting.RED));
+            return false;
+        }
+        if (NpcBuildApi.progress(npc) >= 0) {
+            sp.sendSystemMessage(Component.literal(
+                    "「" + name + "」正忙着盖楼，换一个吧").withStyle(ChatFormatting.RED));
+            return false;
+        }
+        String id = data.getBuildingId();
+        if (!data.isBuildFinished()) {
+            sp.sendSystemMessage(Component.literal(
+                    "还没盖好，完工后再雇工人").withStyle(ChatFormatting.YELLOW));
+            return false;
+        }
+        String job = NpcBuildApi.jobFor(id);
+        if (job == null || job.isEmpty()) {
+            sp.sendSystemMessage(Component.literal(
+                    "这栋建筑没有工人岗位（伴生 json 缺 job 字段）").withStyle(ChatFormatting.YELLOW));
+            return false;
+        }
+        // 原工人退职 (换成别的 NPC 时): 清职业 + 解绑, 让 goal 不再认他
+        String old = data.getEmployNpc();
+        if (old != null && !old.isEmpty() && !old.equals(name)) {
+            UUID oldUuid = centerBlockEntity.get_all_NPC_uuid(sp, old);
+            if (oldUuid != null && level.getEntity(oldUuid) instanceof NPC oldNpc) {
+                oldNpc.unemploy_NPC();
+                oldNpc.shopBuildingId = null;
+            }
+            sp.sendSystemMessage(Component.literal(
+                    old + " 卸任").withStyle(ChatFormatting.YELLOW));
+        }
+        // 上岗: 职业 + 管理方块绑定 (工作范围存 BE, goal 实时读)
+        npc.set_job(job);
+        if (be instanceof industry_block_entity || be instanceof agriculture_block_entity) {
+            npc.set_guanliblock_pos(be.getBlockPos());
+        }
+        writeEmploy(be, name, false);   // 只写雇佣栏, 建造者栏保持原来的
+        sp.sendSystemMessage(Component.literal(
+                name + " 成为 " + shortName(id) + " 的 " + job).withStyle(ChatFormatting.GREEN));
+        return true;
+    }
+
+    /**
+     * 「解雇」按钮: 让当前在岗者 (工人/店员/建造中) 退职 —
+     * 清职业 + 管理方块绑定 + 商店货架绑定 + 建筑雇佣登记;
+     * 建造中途解雇连 NpcBuildTask 一起取消, 盖到一半的楼可以重新雇人接着盖.
+     * 登记的名字找不到对应 NPC (离线/已除名) 时只清登记.
+     */
+    private static Button fireButton(BlockUIMenuType.BlockUIHolder holder,
+                                     BlockEntity be, BuildingData data) {
+        Button btn = new Button();
+        btn.setText("解雇");
+        btn.layout(l -> l.width(60).height(18));
+        btn.setOnServerClick(e -> {
+            if (data == null || !(be.getLevel() instanceof ServerLevel level)
+                    || !(holder.player instanceof ServerPlayer sp)) return;
+            String name = data.getEmployNpc();
+            if (name == null || name.isEmpty()) {
+                sp.sendSystemMessage(Component.literal(
+                        "这里没有人上岗").withStyle(ChatFormatting.YELLOW));
+                return;
+            }
+            UUID uuid = centerBlockEntity.get_all_NPC_uuid(sp, name);
+            if (uuid != null && level.getEntity(uuid) instanceof NPC npc) {
+                NpcBuildApi.stopBuild(npc);        // 建造任务 (没有任务时静默)
+                npc.unemploy_NPC();                // 清职业 (临时 Builder/工人职业一并清)
+                npc.qingli_guanliblock_pos();      // 清管理方块绑定 (工作范围不再认他)
+                npc.shopBuildingId = null;         // 清商店货架绑定
+            }
+            writeEmploy(be, null);                 // 建筑登记清空 (建造者栏一起清)
+            sp.sendSystemMessage(Component.literal(
+                    name + " 已解雇").withStyle(ChatFormatting.YELLOW));
+        });
+        return btn;
     }
 
     /** 拆除建筑时让建造者失业: 按名字找到 NPC 并清职业; 找不到（离线/已除名）就跳过。 */

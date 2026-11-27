@@ -19,6 +19,9 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
     public UUID a_builder_UUID;
     public BlockPos a_town_pos;
 
+    public BlockPos a_work_pos_first;
+    public BlockPos a_work_pos_end;
+
     /** 建造时的旋转步数 (0~3), NPC 重建/重建预览用 */
     public int a_rotation_steps = 0;
 
@@ -49,12 +52,36 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         if (this.a_building_id!=null){
             tag.putString("a_building_id",this.a_building_id);
         }
-        tag.putUUID("a_builder_UUID",this.a_builder_UUID);
+        if(this.a_builder_UUID!=null){
+            tag.putUUID("a_builder_UUID",this.a_builder_UUID);
+        }
+
 
         if(this.a_town_pos!=null){
             tag.putLong("a_town_pos",this.a_town_pos.asLong());
         }
+        if (this.a_work_pos_first!=null){
+            tag.putLong("a_work_pos_first",this.a_work_pos_first.asLong());
+        }
+        if (this.a_work_pos_end!=null){
+            tag.putLong("a_work_pos_end",this.a_work_pos_end.asLong());
+        }
     }
+    public BlockPos get_a_work_pos_first(){
+        return this.a_work_pos_first;
+    }
+    public BlockPos get_a_work_pos_end(){
+        return this.a_work_pos_end;
+    }
+    public void  set_a_work_pos_first(BlockPos pos){
+        this.a_work_pos_first =pos;
+        this.setChanged();
+    }
+    public void  set_a_work_pos_end(BlockPos pos){
+        this.a_work_pos_end =pos;
+        this.setChanged();
+    }
+
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
@@ -76,6 +103,14 @@ public class agriculture_block_entity extends BlockEntity implements BuildingDat
         if(tag.contains("a_tonw_pos")){
             this.a_town_pos=BlockPos.of(tag.getLong("a_town_pos"));
         }
+        if(tag.contains("a_work_pos_first")){
+            this.a_work_pos_first=BlockPos.of(tag.getLong("a_work_pos_first"));
+        }
+        if(tag.contains("a_work_pos_end")){
+            this.a_work_pos_end=BlockPos.of(tag.getLong("a_work_pos_end"));
+        }
+
+
     }
     public UUID a_get_builder_UUID(){
         return this.a_builder_UUID;

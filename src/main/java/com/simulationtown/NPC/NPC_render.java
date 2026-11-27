@@ -16,8 +16,8 @@ public class NPC_render {
     static void onRenderers(EntityRenderersEvent.RegisterRenderers e) {
         e.registerEntityRenderer(NPC_register.NPC.get(), ctx ->
                 new HumanoidMobRenderer<>(ctx,
-                        new HumanoidModel<>(ctx.bakeLayer(ModelLayers.ZOMBIE)),   // vanilla 人形模型
-                        0.5f) {                                                    // 阴影大小
+                        new HumanoidModel<>(ctx.bakeLayer(ModelLayers.ZOMBIE)),
+                        0.5f) {
                     @Override
                     public ResourceLocation getTextureLocation(NPC entity) {
                         return ResourceLocation.fromNamespaceAndPath("simulation_town",

@@ -1,0 +1,18 @@
+{
+  "job": "SHOPER",
+  "cost": 5,
+  "goods": [
+    {"item": "minecraft:oak_planks", "count": 64, "price": 0.4},
+    {"item": "minecraft:cobblestone", "count": 64, "price": 0.2},
+    {"item": "minecraft:glass", "count": 64, "price": 0.32},
+    {"item": "minecraft:white_wool", "count": 64, "price": 0.5},
+    {"item": "minecraft:stone_bricks", "count": 64, "price": 0.8},
+    {"item": "minecraft:bricks", "count": 64, "price": 1.0},
+    {"item": "minecraft:oak_fence", "count": 64, "price": 0.35},
+    {"item": "minecraft:oak_log", "count": 64, "price": 1.6},
+    {"item": "minecraft:terracotta", "count": 64, "price": 0.5},
+    {"item": "minecraft:wheat_seeds", "count": 64, "price": 1.0},
+    {"item": "minecraft:carrot", "count": 64, "price": 1.0},
+    {"item": "minecraft:potato", "count": 64, "price": 1.0}
+  ]
+}

@@ -16,8 +16,8 @@ public class pick_thing extends Goal {
 
     @Override
     public boolean canUse() {
-        // 找周围 3格内的物品
-        List<ItemEntity> items = npc.level().getEntitiesOfClass(ItemEntity.class, npc.getBoundingBox().inflate(3.0D));
+        // 找周围 5格内的物品
+        List<ItemEntity> items = npc.level().getEntitiesOfClass(ItemEntity.class, npc.getBoundingBox().inflate(5.0D));
         if (items.isEmpty()) return false;
 
         targetItem = items.get(0);

@@ -1,16 +1,19 @@
 package com.simulationtown.AI;
 
 import com.simulationtown.NPC.NPC;
+import com.simulationtown.industry.industry_block_entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.util.EnumSet;
-
+/*  这个是构石 */
 public class kanshu_goal extends Goal {
     public NPC npc;
     public BlockPos work_pos;
@@ -35,9 +38,13 @@ public class kanshu_goal extends Goal {
     }
     @Override
     public void start(){
-        if (find_tree()!=null){
-            this.work_pos=find_tree();
-            npc.getNavigation().moveTo(work_pos.getX(),work_pos.getY(), work_pos.getZ(), 1.0D);
+        if (find_tree(this.npc.level())!=null){
+            this.work_pos=find_tree(this.npc.level());
+            if(!npc.blockPosition().closerThan(work_pos, 4.5D)){
+                npc.getNavigation().moveTo(work_pos.getX(),work_pos.getY(), work_pos.getZ(), 1.0D);
+
+            }
+
             }
         }
     @Override
@@ -45,7 +52,10 @@ public class kanshu_goal extends Goal {
         if (work_pos ==null) return;
         npc.getLookControl().setLookAt(work_pos.getX(), work_pos.getY(), work_pos.getZ());
 
-        if (npc.blockPosition().closerThan(work_pos, 2.0D)) {
+        if (npc.blockPosition().closerThan(work_pos, 4.5D)) {
+            if (!npc.getNavigation().isDone()) {
+                npc.getNavigation().stop();   // 够得着就别再往树上挤
+            }
 
             npc.swing(InteractionHand.MAIN_HAND);
 
@@ -63,8 +73,11 @@ public class kanshu_goal extends Goal {
     }
     @Override
     public boolean canContinueToUse() {
+        if(work_pos!=null){
+            return work_pos != null && !npc.getNavigation().isDone()|| npc.blockPosition().closerThan(work_pos, 4.5D);
+        }
+        return  false;
 
-        return work_pos != null && !npc.getNavigation().isDone();
     }
     @Override
     public void stop() {
@@ -72,12 +85,21 @@ public class kanshu_goal extends Goal {
         npc.getNavigation().stop();
     }
 
-    public BlockPos find_tree(){
-        BlockPos npc_pos =this.npc.blockPosition();
-        for (BlockPos pos : BlockPos.betweenClosed(npc_pos.offset(0, 0, 0), npc_pos.offset(10, 3, 10))){
-            if (npc.level().getBlockState(pos).is(Blocks.OAK_LOG)) {
-                return pos.immutable();
+    public BlockPos find_tree(Level level){
+        if(npc.guanliblock_pos!=null){
+            BlockEntity be = level.getBlockEntity(npc.guanliblock_pos);
+            BlockPos npc_pos =this.npc.blockPosition();
+            if(be instanceof industry_block_entity ibe){
+                if(ibe.i_work_pos_first !=null && ibe.i_work_pos_end !=null){
+                    for (BlockPos pos : BlockPos.betweenClosed(ibe.i_work_pos_first,ibe.i_work_pos_end)){
+                        if (level.isLoaded(pos) && npc.level().getBlockState(pos).is(Blocks.OAK_LOG)) {
+                            return pos.immutable();
+                        }
+                    }
+                }
+
             }
+
         }
         return null;
 

@@ -65,7 +65,9 @@ public class npc_hire_ui {
             if (session == null) return Component.literal("没有待选的建造任务");
             int total = (session.candidates().size() + PAGE_SIZE - 1) / PAGE_SIZE;
             String verb = session.homeMode() ? "选个 NPC 住进来"
-                    : session.shopMode() ? "选个 NPC 当店员" : "选个 NPC 来盖";
+                    : session.shopMode() ? "选个 NPC 当店员"
+                    : session.workerMode() ? "选个 NPC 来打工"
+                    : "选个 NPC 来盖";
             return Component.literal(verb + "（" + (page[0] + 1) + "/" + total + " 页）");
         }).build());
         root.addChild(title);
@@ -97,7 +99,8 @@ public class npc_hire_ui {
                 int global = page[0] * PAGE_SIZE + slot;
                 if (global >= s.candidates().size()) return;
                 building_ui.HIRE_SESSIONS.put(sp.getUUID(), new building_ui.HireSession(
-                        s.buildingPos(), s.candidates(), global, s.shopMode(), s.homeMode()));
+                        s.buildingPos(), s.candidates(), global,
+                        s.shopMode(), s.homeMode(), s.workerMode()));
             });
 
             Label name = new Label();
@@ -182,6 +185,8 @@ public class npc_hire_ui {
             boolean ok;
             if (s.homeMode()) {
                 ok = building_ui.assignHome(sp, level, be, name);
+            } else if (s.workerMode()) {
+                ok = building_ui.hireWorker(sp, level, be, data, name);
             } else if (s.shopMode()) {
                 ok = building_ui.hireShopkeeper(sp, level, be, data, name);
             } else {
