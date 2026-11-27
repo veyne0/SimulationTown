@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.util.EnumSet;
-/*  这个是构石 */
+/*  这个是构石 ，到时候必须重写*/
 public class kanshu_goal extends Goal {
     public NPC npc;
     public BlockPos work_pos;
